@@ -1,0 +1,18 @@
+http:
+  addr: 127.0.0.1:8080
+log_level: INFO
+rtmp:
+  addr: 127.0.0.1:1935
+application:
+  - enable: true
+    app_name: live
+    hls:
+      enable: true
+      fragment: 2
+      playlist_length: 6
+    recorder:
+      enable: false
+      save_as: flv
+      save_mode: immediate
+      segment: 60
+      driver: fs

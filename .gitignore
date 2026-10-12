@@ -1,0 +1,7 @@
+/bin/
+/dist/
+/artifacts/
+/testdata/generated/
+*.test
+coverage.out
+.DS_Store
