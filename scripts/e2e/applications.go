@@ -81,18 +81,9 @@ func (harness *harness) applicationLifecycle() error {
 	if err != nil {
 		return err
 	}
-	players := map[string]*process{}
-	for _, app := range []string{"flv", "ts"} {
-		if _, err := harness.waitPlaylist(app); err != nil {
-			return err
-		}
-		group, err := harness.players(app, app+"-", 38)
-		if err != nil {
-			return err
-		}
-		for name, child := range group {
-			players[name] = child
-		}
+	players, err := harness.playersForApps(38)
+	if err != nil {
+		return err
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { watch.cancel(); <-watch.done }()

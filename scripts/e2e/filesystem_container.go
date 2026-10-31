@@ -72,11 +72,14 @@ func (harness *harness) startFilesystemContainerWithLimits(faultBytes, healthyBy
 		return container, fmt.Errorf("unsupported Docker platform %q", body)
 	}
 	binary := filepath.Join(harness.evidence, "streamd-linux")
-	build := exec.CommandContext(ctx, "go", "build", "-o", binary, "./cmd/streamd")
-	build.Dir = harness.root
-	build.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS=linux", "GOARCH="+architecture)
-	if body, err := build.CombinedOutput(); err != nil {
-		return container, fmt.Errorf("Linux service build: %w: %s", err, body)
+	clock := filepath.Join(harness.evidence, "clock-linux")
+	for _, target := range []struct{ output, source string }{{binary, "./cmd/streamd"}, {clock, "./scripts/e2e/clock"}} {
+		build := exec.CommandContext(ctx, "go", "build", "-o", target.output, target.source)
+		build.Dir = harness.root
+		build.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS=linux", "GOARCH="+architecture)
+		if body, err := build.CombinedOutput(); err != nil {
+			return container, fmt.Errorf("Linux %s build: %w: %s", target.source, err, body)
+		}
 	}
 	if _, err := runner.command(ctx, "image", "inspect", filesystemImage); err != nil {
 		if _, err := runner.command(ctx, "pull", filesystemImage); err != nil {
@@ -102,6 +105,7 @@ func (harness *harness) startFilesystemContainerWithLimits(faultBytes, healthyBy
 		"--user", identity, "--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--cpus", "1", "--memory", "512m", "--pids-limit", "128",
 		"--tmpfs", fmt.Sprintf("/fault:rw,nosuid,nodev,size=%d,uid=%d,gid=%d,mode=0700", faultBytes, os.Getuid(), os.Getgid()),
 		"--tmpfs", fmt.Sprintf("/healthy:rw,nosuid,nodev,size=%d,uid=%d,gid=%d,mode=0700", healthyBytes, os.Getuid(), os.Getgid()),
+		"--mount", "type=bind,source=" + clock + ",target=/test-clock,readonly",
 		"--mount", "type=bind,source=" + binary + ",target=/streamd,readonly", "--mount", "type=bind,source=" + config + ",target=/config.json,readonly",
 		"--publish", "127.0.0.1:" + origin.Port() + ":8080", "--publish", fmt.Sprintf("127.0.0.1:%d:1935", harness.rtmpPort), filesystemImage, "/streamd", "-config", "/config.json"}
 	harness.server, err = harness.launch("server", arguments...)

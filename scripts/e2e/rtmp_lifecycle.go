@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net"
 	"os"
 	"path/filepath"
@@ -106,16 +105,9 @@ func (harness *harness) rtmpLifecycle() (failure error) {
 	if err != nil {
 		return err
 	}
-	players := map[string]*process{}
-	for _, app := range []string{"flv", "ts"} {
-		if _, err := harness.waitPlaylist(app); err != nil {
-			return err
-		}
-		group, err := harness.players(app, app+"-", 36)
-		if err != nil {
-			return err
-		}
-		maps.Copy(players, group)
+	players, err := harness.playersForApps(36)
+	if err != nil {
+		return err
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()

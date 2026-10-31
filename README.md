@@ -52,7 +52,9 @@ make check
 
 Production builds use `CGO_ENABLED=0`; the race detector requires a C toolchain. FFmpeg and ffprobe are independent test tools, not runtime dependencies.
 
-For media integration tests, install FFmpeg/ffprobe, run `make fixtures`, then `make e2e`. Additional scenarios and build targets are listed in the `Makefile`; discovery and object-storage integration scenarios require Docker. Generated media and test output belong in the ignored `testdata/generated` and `artifacts` directories.
+Install FFmpeg/ffprobe, then run `make verify` for unit tests, static checks, and the core media suite (streaming, reload, republish, recording resume). `make e2e-core` runs only that suite; it stops on failure and writes a summary with per-scenario evidence paths. Fixtures are generated automatically.
+
+Use `make e2e-list` to list all scenarios, and `make e2e-<scenario>` for targeted checks. Docker scenarios accept `STREAMD_DOCKER_CONTEXT` (for example, `orbstack`); object-storage and release scenarios may require additional provider/image settings. Existing scenario commands remain available. Generated media and evidence are retained in the ignored `testdata/generated` and `artifacts` directories for inspection.
 
 ## License
 
