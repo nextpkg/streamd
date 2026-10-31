@@ -81,7 +81,7 @@ func TestRecordingPreflightRejectsUnusableCandidateWithoutRevokingActive(test *t
 				if strings.Contains(err.Error(), "secret-do-not-log") || strings.Contains(err.Error(), endpoint.URL) {
 					test.Fatalf("preflight exposed credentials or endpoint: %v", err)
 				}
-				if Get() != previous || manager.Version() != 1 || previous.Finder.ctx.Err() != nil {
+				if Get() != previous || manager.Version() != 1 || previous.Finder.runtime.ctx.Err() != nil {
 					test.Fatal("failed preparation changed or revoked active snapshot")
 				}
 				if requests.Load() == 0 {

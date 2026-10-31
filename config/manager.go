@@ -173,17 +173,7 @@ func (manager *Manager) Reload() error {
 			return fmt.Errorf("prepare recording: %w", err)
 		}
 	}
-	if previous.Finder.Redis == nil && candidate.Finder.Redis == nil {
-		for name, cache := range previous.Finder.confd {
-			if next := candidate.Finder.confd[name]; next != nil {
-				cache.m.RLock()
-				for key, value := range cache.cache {
-					next.cache[key] = value
-				}
-				cache.m.RUnlock()
-			}
-		}
-	}
+	candidate.Finder.inheritLocalRegistrations(&previous.Finder)
 	if err := manager.ctx.Err(); err != nil {
 		candidate.Revoke()
 		return err
