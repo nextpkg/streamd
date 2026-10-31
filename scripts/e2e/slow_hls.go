@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -157,7 +156,6 @@ func (harness *harness) slowHLS() (failure error) {
 		return err
 	}
 	publishers := map[string]*process{}
-	players := map[string]*process{}
 	for _, app := range []string{"flv", "ts"} {
 		child, err := harness.launch("publish-"+app, "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-xerror", "-re", "-stream_loop", "-1", "-i", fixture, "-t", "60", "-c", "copy", "-f", "flv", fmt.Sprintf("rtmp://127.0.0.1:%d/%s/sample", harness.rtmpPort, app))
 		if err != nil {
@@ -165,15 +163,9 @@ func (harness *harness) slowHLS() (failure error) {
 		}
 		publishers[app] = child
 	}
-	for _, app := range []string{"flv", "ts"} {
-		if _, err := harness.waitPlaylist(app); err != nil {
-			return err
-		}
-		group, err := harness.players(app, app+"-", 45)
-		if err != nil {
-			return err
-		}
-		maps.Copy(players, group)
+	players, err := harness.playersForApps(45)
+	if err != nil {
+		return err
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()

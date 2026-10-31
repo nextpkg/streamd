@@ -35,22 +35,45 @@ func (progress *frameProgress) observe(now time.Time, frames int, limit time.Dur
 	return nil
 }
 
+// completeProgressFrames ignores an unfinished line while FFmpeg is still writing.
 func completeProgressFrames(body string) (int, error) {
 	boundary := strings.LastIndexByte(body, '\n')
 	if boundary < 0 {
 		return 0, nil
 	}
-	maximum := 0
-	for _, line := range strings.Split(body[:boundary], "\n") {
+	return parseFrameProgress(body[:boundary])
+}
+
+// decodedFrames validates the complete file after the decoder exits.
+func decodedFrames(body string) (int, error) {
+	if body != "" && !strings.HasSuffix(body, "\n") {
+		return 0, errors.New("incomplete decoder progress line")
+	}
+	frames, err := parseFrameProgress(body)
+	if err != nil {
+		return 0, err
+	}
+	if frames == 0 {
+		return 0, errors.New("no decoded video frames")
+	}
+	return frames, nil
+}
+
+func parseFrameProgress(body string) (int, error) {
+	last := 0
+	for _, line := range strings.Split(body, "\n") {
 		if value, exists := strings.CutPrefix(line, "frame="); exists {
 			frames, err := strconv.Atoi(strings.TrimSpace(value))
 			if err != nil || frames < 0 {
 				return 0, fmt.Errorf("invalid frame count %q", value)
 			}
-			maximum = max(maximum, frames)
+			if frames < last {
+				return 0, errors.New("decoded frame counter moved backwards")
+			}
+			last = frames
 		}
 	}
-	return maximum, nil
+	return last, nil
 }
 
 type playbackWatch struct {

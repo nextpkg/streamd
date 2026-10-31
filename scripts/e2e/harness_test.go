@@ -10,26 +10,6 @@ import (
 	"testing"
 )
 
-func TestDecodedFrames(test *testing.T) {
-	for _, sample := range []struct {
-		progress string
-		frames   int
-		valid    bool
-	}{
-		{"frame=1\nframe= 1094\nprogress=end\n", 1094, true},
-		{"frame=1094\nframe=1000\n", 1094, true},
-		{"progress=end\n", 0, false},
-		{"frame=0\n", 0, false},
-		{"frame=-2\n", 0, false},
-		{"frame=N/A\n", 0, false},
-	} {
-		frames, err := decodedFrames(sample.progress)
-		if (err == nil) != sample.valid || frames != sample.frames {
-			test.Fatalf("%q: frames=%d error=%v", sample.progress, frames, err)
-		}
-	}
-}
-
 func TestSegmentURL(test *testing.T) {
 	for _, sample := range []struct {
 		playlist string

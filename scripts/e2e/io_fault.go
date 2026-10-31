@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -82,16 +81,9 @@ func newUploadFault(endpoint, mode string) (*uploadFault, error) {
 func (fault *uploadFault) close() { close(fault.release); fault.server.Close() }
 
 func (harness *harness) faultPlayers() (map[string]*process, *playbackWatch, error) {
-	players := make(map[string]*process)
-	for _, app := range []string{"flv", "ts"} {
-		if _, err := harness.waitPlaylist(app); err != nil {
-			return nil, nil, err
-		}
-		group, err := harness.players(app, app+"-", 46)
-		if err != nil {
-			return nil, nil, err
-		}
-		maps.Copy(players, group)
+	players, err := harness.playersForApps(46)
+	if err != nil {
+		return nil, nil, err
 	}
 	watch := harness.watchPlayback(players)
 	select {
