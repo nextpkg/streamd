@@ -92,7 +92,7 @@ func TestOriginSingleFlightRetainsWarmStreamAndExternalIdentity(test *testing.T)
 	entered, release := make(chan struct{}), make(chan struct{})
 	var attempts atomic.Int32
 	reader := &takeoverReader{Universal: core.NewUniversal(base.NewInfo(app, "sample", true)), done: make(chan struct{})}
-	connection.pull = func(ctx context.Context, _ *base.Info, _ string, _ time.Duration) (base.ReadCloser, error) {
+	connection.pull = func(ctx context.Context, _ *base.Info, _ string, _ time.Duration, _ core.ClientOptions) (base.ReadCloser, error) {
 		if attempts.Add(1) != 1 {
 			return nil, errors.New("duplicate origin connection")
 		}
@@ -172,7 +172,7 @@ func TestOriginCacheReuseExpiryPolicyAndFailureCooldown(test *testing.T) {
 		test.Fatal("new source policy did not replace the cache for a new origin")
 	}
 	var attempts atomic.Int32
-	connection.pull = func(context.Context, *base.Info, string, time.Duration) (base.ReadCloser, error) {
+	connection.pull = func(context.Context, *base.Info, string, time.Duration, core.ClientOptions) (base.ReadCloser, error) {
 		attempts.Add(1)
 		return nil, errors.New("injected origin failure")
 	}
@@ -196,7 +196,7 @@ func TestOriginStartupCannotReplaceNewLocalPublisher(test *testing.T) {
 	defer connection.Close()
 	entered, release, installed := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	origin := &takeoverReader{Universal: core.NewUniversal(base.NewInfo(app, "sample", true)), done: make(chan struct{})}
-	connection.pull = func(ctx context.Context, _ *base.Info, _ string, _ time.Duration) (base.ReadCloser, error) {
+	connection.pull = func(ctx context.Context, _ *base.Info, _ string, _ time.Duration, _ core.ClientOptions) (base.ReadCloser, error) {
 		close(entered)
 		select {
 		case <-ctx.Done():
@@ -235,7 +235,7 @@ func TestOriginShutdownCancelsBlockedStartup(test *testing.T) {
 	defer cancel()
 	connection := NewConn(ctx)
 	entered, installed := make(chan struct{}), make(chan struct{})
-	connection.pull = func(ctx context.Context, _ *base.Info, _ string, _ time.Duration) (base.ReadCloser, error) {
+	connection.pull = func(ctx context.Context, _ *base.Info, _ string, _ time.Duration, _ core.ClientOptions) (base.ReadCloser, error) {
 		close(entered)
 		<-ctx.Done()
 		return nil, ctx.Err()
@@ -263,19 +263,27 @@ func TestOriginShutdownCancelsBlockedStartup(test *testing.T) {
 
 func TestOriginStartupRejectsApplicationRemovedWhileConnecting(test *testing.T) {
 	app := test.Name()
-	config.Get().SetApp(app, &config.App{Enable: true, AppName: app, StaticPull: []string{"rtmp://127.0.0.1/source"}})
+	initial := config.NewConfig()
+	initial.SetApp(app, &config.App{Enable: true, AppName: app, StaticPull: []string{"rtmp://127.0.0.1/source"}})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	connection := NewConn(ctx)
+	var current atomic.Pointer[config.Config]
+	current.Store(initial)
+	connection := newConn(ctx, current.Load)
 	defer connection.Close()
 	reader := &takeoverReader{Universal: core.NewUniversal(base.NewInfo(app, "sample", true)), done: make(chan struct{})}
-	connection.pull = func(context.Context, *base.Info, string, time.Duration) (base.ReadCloser, error) {
-		config.Get().SetApp(app, nil)
+	pulled := false
+	connection.pull = func(context.Context, *base.Info, string, time.Duration, core.ClientOptions) (base.ReadCloser, error) {
+		pulled = true
+		current.Store(config.NewConfig())
 		return reader, nil
 	}
 	writer := core.NewFunnel(&takeoverTerminal{Universal: core.NewUniversal(base.NewInfo(app, "sample", true))})
 	defer func() { writer.Close(); writer.Wait() }()
 	connection.InstallWriter(writer)
+	if !pulled {
+		test.Fatal("origin did not use the injected application configuration")
+	}
 	if !writer.IsClosed() || len(connection.StreamKeys()) != 0 {
 		test.Fatal("removed application admitted a new origin")
 	}

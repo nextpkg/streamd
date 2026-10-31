@@ -38,7 +38,7 @@ func (connection *Conn) installOriginWriter(writer base.WriteCloser) {
 			return
 		}
 	}
-	cfg := config.Get()
+	cfg := connection.currentConfig()
 	if !writer.Info().IsExternal || !cfg.Finder.EnableRelay || cfg.GetApp(writer.Info().App) == nil {
 		lock.Unlock()
 		writer.Close()
@@ -105,7 +105,11 @@ func (connection *Conn) captureOrigin(info *base.Info, cfg *config.Config, fligh
 			timeout = 10 * time.Second
 		}
 		ctx, cancel := context.WithTimeout(flight.ctx, timeout)
-		reader, err := connection.pull(ctx, info.Copy(), candidate.pullHost, timeout)
+		// Preserve the flight's source/timeout snapshot, but refresh transport options
+		// for each new dial, including retries after a configuration reload.
+		settings := connection.currentConfig().RTMP
+		options := core.ClientOptions{BufferSize: settings.BufSize, SlabMin: settings.SlabMin * 1024, SlabMax: settings.SlabMax * 1024}
+		reader, err := connection.pull(ctx, info.Copy(), candidate.pullHost, timeout, options)
 		cancel()
 		if err != nil {
 			candidate.usable, candidate.deadTime = false, time.Now().Unix()
@@ -151,7 +155,8 @@ func (connection *Conn) attachOrigin(info *base.Info, reader base.ReadCloser, fl
 		}
 		_ = previous.terminate(true)
 	}
-	cfg := config.Get()
+	// Re-check admission after the dial; the application may have been removed.
+	cfg := connection.currentConfig()
 	app := cfg.GetApp(info.App)
 	if app == nil {
 		lock.Unlock()
@@ -184,9 +189,8 @@ func (connection *Conn) attachOrigin(info *base.Info, reader base.ReadCloser, fl
 	}
 }
 
-func pullOrigin(ctx context.Context, info *base.Info, address string, timeout time.Duration) (base.ReadCloser, error) {
-	settings := config.Get().RTMP
-	client, err := core.DialConnClient(ctx, address, timeout, core.ClientOptions{BufferSize: settings.BufSize, SlabMin: settings.SlabMin * 1024, SlabMax: settings.SlabMax * 1024})
+func pullOrigin(ctx context.Context, info *base.Info, address string, timeout time.Duration, options core.ClientOptions) (base.ReadCloser, error) {
+	client, err := core.DialConnClient(ctx, address, timeout, options)
 	if err != nil {
 		return nil, err
 	}
