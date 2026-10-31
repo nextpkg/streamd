@@ -10,6 +10,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
+	"github.com/nextpkg/streamd/internal/appstate"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/stretchr/testify/require"
 )
@@ -34,13 +35,13 @@ func (segment *blockedSegment) Finish() error {
 
 func (segment *blockedSegment) unlock() { segment.unlockOnce.Do(func() { close(segment.release) }) }
 
-func recordingState(info *base.Info) config.ApplicationStatus {
-	for _, state := range config.ApplicationStates() {
+func recordingState(info *base.Info) appstate.Status {
+	for _, state := range appstate.Snapshot() {
 		if state.Component == "recording" && state.Stream == info.Key {
 			return state
 		}
 	}
-	return config.ApplicationStatus{}
+	return appstate.Status{}
 }
 
 func TestRecordingFinalizationDoesNotBlockDisable(t *testing.T) {

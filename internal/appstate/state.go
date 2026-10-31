@@ -1,4 +1,5 @@
-package config
+// Package appstate tracks component runtime status independently of configuration.
+package appstate
 
 import (
 	"sort"
@@ -6,7 +7,7 @@ import (
 	"time"
 )
 
-type ApplicationStatus struct {
+type Status struct {
 	Component     string `json:"component"`
 	Stream        string `json:"stream"`
 	Revision      uint64 `json:"revision"`
@@ -18,26 +19,26 @@ type ApplicationStatus struct {
 
 var applications sync.Map
 
-func StartApplication(component, stream, owner string, revision uint64, state string) {
-	applications.Store(component+":"+stream, ApplicationStatus{Component: component, Stream: stream, Revision: revision, State: state, owner: owner})
+func Start(component, stream, owner string, revision uint64, state string) {
+	applications.Store(component+":"+stream, Status{Component: component, Stream: stream, Revision: revision, State: state, owner: owner})
 }
 
-func ReportApplication(component, stream, owner string, revision uint64, state string) {
+func Report(component, stream, owner string, revision uint64, state string) {
 	updateApplication(component, stream, owner, revision, state, false)
 }
 
-func ReportApplicationFailure(component, stream, owner string, revision uint64) {
+func ReportFailure(component, stream, owner string, revision uint64) {
 	updateApplication(component, stream, owner, revision, "failed", true)
 }
 
-func ReportApplicationBackgroundFailure(component, stream, owner string) {
+func ReportBackgroundFailure(component, stream, owner string) {
 	key := component + ":" + stream
 	for {
 		previous, exists := applications.Load(key)
-		if !exists || previous.(ApplicationStatus).owner != owner {
+		if !exists || previous.(Status).owner != owner {
 			return
 		}
-		next := previous.(ApplicationStatus)
+		next := previous.(Status)
 		next.Failures++
 		next.LastFailureAt = time.Now().Unix()
 		if applications.CompareAndSwap(key, previous, next) {
@@ -50,10 +51,10 @@ func updateApplication(component, stream, owner string, revision uint64, state s
 	key := component + ":" + stream
 	for {
 		previous, exists := applications.Load(key)
-		if !exists || previous.(ApplicationStatus).owner != owner {
+		if !exists || previous.(Status).owner != owner {
 			return
 		}
-		next := previous.(ApplicationStatus)
+		next := previous.(Status)
 		next.Revision, next.State = revision, state
 		if failure {
 			next.Failures++
@@ -65,16 +66,16 @@ func updateApplication(component, stream, owner string, revision uint64, state s
 	}
 }
 
-func ForgetApplication(component, stream, owner string) {
+func Forget(component, stream, owner string) {
 	key := component + ":" + stream
-	if value, ok := applications.Load(key); ok && value.(ApplicationStatus).owner == owner {
+	if value, ok := applications.Load(key); ok && value.(Status).owner == owner {
 		applications.CompareAndDelete(key, value)
 	}
 }
 
-func ApplicationStates() []ApplicationStatus {
-	result := []ApplicationStatus{}
-	applications.Range(func(key, value any) bool { result = append(result, value.(ApplicationStatus)); return true })
+func Snapshot() []Status {
+	result := []Status{}
+	applications.Range(func(key, value any) bool { result = append(result, value.(Status)); return true })
 	sort.Slice(result, func(left, right int) bool {
 		if result[left].Component != result[right].Component {
 			return result[left].Component < result[right].Component

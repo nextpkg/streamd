@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/nextpkg/streamd/config"
+	"github.com/nextpkg/streamd/internal/appstate"
 	log "github.com/nextpkg/streamd/internal/logging"
 )
 
@@ -43,7 +44,7 @@ func (writer *switchingWriter) retire() bool {
 			terminal.After()
 		} else if err := terminal.Finish(); err != nil {
 			log.Errorf("[%s]recording configuration finalization: %s", info.Key, err)
-			config.ReportApplicationBackgroundFailure("recording", info.Key, info.UID)
+			appstate.ReportBackgroundFailure("recording", info.Key, info.UID)
 		}
 	}()
 	return true
@@ -75,7 +76,7 @@ func recordingDirectory(directory string) string {
 }
 
 func (writer *switchingWriter) fail(revision uint64) {
-	config.ReportApplicationFailure("recording", writer.Info().Key, writer.Info().UID, revision)
+	appstate.ReportFailure("recording", writer.Info().Key, writer.Info().UID, revision)
 	writer.terminalFailed, writer.paused = true, true
 	writer.retire()
 }

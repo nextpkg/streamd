@@ -12,6 +12,7 @@ import (
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/container/ts"
 	"github.com/nextpkg/streamd/hls/item"
+	"github.com/nextpkg/streamd/internal/appstate"
 	errors "github.com/nextpkg/streamd/internal/errutil"
 	log "github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
@@ -79,7 +80,7 @@ func NewStream(info *base.Info) *core.Funnel {
 		seenRevision: snapshot.Revision,
 	}
 	ret.setActive(param.Enable)
-	config.StartApplication("hls", info.Key, info.UID, snapshot.Revision, "waiting_keyframe")
+	appstate.Start("hls", info.Key, info.UID, snapshot.Revision, "waiting_keyframe")
 
 	cfg := config.Get().Metadata
 
@@ -101,7 +102,7 @@ func (s *Stream) Write(p *packet.Packet) error {
 	snapshot := config.Get()
 	if snapshot.Revision != s.seenRevision {
 		s.seenRevision = snapshot.Revision
-		config.ReportApplication("hls", s.Info().Key, s.Info().UID, snapshot.Revision, "waiting_keyframe")
+		appstate.Report("hls", s.Info().Key, s.Info().UID, snapshot.Revision, "waiting_keyframe")
 	}
 	if !s.separate(p) {
 		return nil
@@ -132,7 +133,7 @@ func (s *Stream) Write(p *packet.Packet) error {
 
 // After 流结束后的处理过程
 func (s *Stream) After() {
-	defer config.ForgetApplication("hls", s.Info().Key, s.Info().UID)
+	defer appstate.Forget("hls", s.Info().Key, s.Info().UID)
 	s.setActive(false)
 	s.flush()
 
@@ -151,7 +152,7 @@ func (s *Stream) After() {
 func (s *Stream) applyConfiguration(snapshot *config.Config) {
 	app := snapshot.GetApp(s.Info().App)
 	if app == nil {
-		config.ReportApplication("hls", s.Info().Key, s.Info().UID, snapshot.Revision, "retained_for_existing_stream")
+		appstate.Report("hls", s.Info().Key, s.Info().UID, snapshot.Revision, "retained_for_existing_stream")
 		return
 	}
 	next := app.HLS
@@ -181,7 +182,7 @@ func (s *Stream) applyConfiguration(snapshot *config.Config) {
 	if !next.Enable {
 		state = "disabled"
 	}
-	config.ReportApplication("hls", s.Info().Key, s.Info().UID, snapshot.Revision, state)
+	appstate.Report("hls", s.Info().Key, s.Info().UID, snapshot.Revision, state)
 }
 
 func (s *Stream) Available() bool { return s.active.Load() || s.m3u8.HasItems() }

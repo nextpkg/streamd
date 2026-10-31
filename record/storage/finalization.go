@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/nextpkg/streamd/config"
+	"github.com/nextpkg/streamd/internal/appstate"
 	errors "github.com/nextpkg/streamd/internal/errutil"
 	log "github.com/nextpkg/streamd/internal/logging"
 )
@@ -129,7 +130,7 @@ func (store *Storage) finalizeSegment(complete, block bool, prior error) error {
 		segment.failure = finish()
 		if segment.failure != nil {
 			log.Errorf("[%s]recording segment finalization: %s", key, segment.failure)
-			config.ReportApplicationBackgroundFailure("recording", key, owner)
+			appstate.ReportBackgroundFailure("recording", key, owner)
 		}
 	}()
 	return nil

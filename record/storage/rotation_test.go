@@ -8,6 +8,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
+	"github.com/nextpkg/streamd/internal/appstate"
 )
 
 type rotationDriver struct {
@@ -112,7 +113,7 @@ func TestOrdinaryRotationDoesNotWaitOrReportPrematureCompletion(test *testing.T)
 func TestRotationFailurePreservesCurrentStateAndOwner(test *testing.T) {
 	for _, replaceOwner := range []bool{false, true} {
 		info := base.NewInfo("rotation-status", "sample", false)
-		config.StartApplication("recording", info.Key, info.UID, 1, "active")
+		appstate.Start("recording", info.Key, info.UID, 1, "active")
 		driver := &rotationDriver{started: make(chan bool, 1), release: make(chan struct{}), failure: errors.New("old segment failed")}
 		settings := &config.AppRecorder{SaveAs: "flv", SaveMode: "immediate", Segment: 4, Driver: "aws"}
 		store := NewStorage(info, settings, NewEvent())
@@ -126,9 +127,9 @@ func TestRotationFailurePreservesCurrentStateAndOwner(test *testing.T) {
 		owner := info.UID
 		if replaceOwner {
 			owner += "-replacement"
-			config.StartApplication("recording", info.Key, owner, 2, "active")
+			appstate.Start("recording", info.Key, owner, 2, "active")
 		} else {
-			config.ReportApplication("recording", info.Key, owner, 2, "active")
+			appstate.Report("recording", info.Key, owner, 2, "active")
 		}
 		close(driver.release)
 		if err := store.Close(true); !errors.Is(err, driver.failure) {
@@ -139,7 +140,7 @@ func TestRotationFailurePreservesCurrentStateAndOwner(test *testing.T) {
 			test.Fatal("old finalization poisoned the current segment")
 		}
 		found := false
-		for _, state := range config.ApplicationStates() {
+		for _, state := range appstate.Snapshot() {
 			if state.Component != "recording" || state.Stream != info.Key {
 				continue
 			}
@@ -152,7 +153,7 @@ func TestRotationFailurePreservesCurrentStateAndOwner(test *testing.T) {
 				test.Fatalf("late result changed current state or owner: %+v", state)
 			}
 		}
-		config.ForgetApplication("recording", info.Key, owner)
+		appstate.Forget("recording", info.Key, owner)
 		if !found {
 			test.Fatal("current component status disappeared")
 		}
