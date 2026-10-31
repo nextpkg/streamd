@@ -420,23 +420,6 @@ func (harness *harness) finish(name string, child *process, timeout time.Duratio
 	return nil
 }
 
-func decodedFrames(progress string) (int, error) {
-	maximum := 0
-	for _, line := range strings.Split(progress, "\n") {
-		if value, exists := strings.CutPrefix(line, "frame="); exists {
-			frames, err := strconv.Atoi(strings.TrimSpace(value))
-			if err != nil || frames < 0 {
-				return 0, fmt.Errorf("invalid frame count %q", value)
-			}
-			maximum = max(maximum, frames)
-		}
-	}
-	if maximum == 0 {
-		return 0, errors.New("no decoded video frames")
-	}
-	return maximum, nil
-}
-
 func (harness *harness) finishPlayers(players map[string]*process, minimumFrames int) error {
 	for name, child := range players {
 		if err := harness.finish("play-"+name, child, 90*time.Second); err != nil {

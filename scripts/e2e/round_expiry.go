@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -194,16 +193,9 @@ func (harness *harness) roundExpiry() (result error) {
 	if err != nil {
 		return err
 	}
-	players := map[string]*process{}
-	for _, app := range []string{"flv", "ts"} {
-		if _, err := harness.waitPlaylist(app); err != nil {
-			return err
-		}
-		group, err := harness.players(app, app+"-", 50)
-		if err != nil {
-			return err
-		}
-		maps.Copy(players, group)
+	players, err := harness.playersForApps(50)
+	if err != nil {
+		return err
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { result = errors.Join(result, watch.finish(harness)) }()
