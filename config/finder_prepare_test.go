@@ -131,7 +131,7 @@ func TestRedisCandidateCacheUsesPreparationBudgetWithoutErasingSnapshot(test *te
 	if err := finder.storeContext(ctx, cache); !errors.Is(err, context.DeadlineExceeded) {
 		test.Fatalf("preparation budget not enforced: %v", err)
 	}
-	if finder.ctx.Err() != nil || cache.getValue("/streamd/live/sample") != "confirmed" {
+	if finder.runtime.ctx.Err() != nil || cache.getValue("/streamd/live/sample") != "confirmed" {
 		test.Fatal("preparation canceled runtime or replaced confirmed cache")
 	}
 }

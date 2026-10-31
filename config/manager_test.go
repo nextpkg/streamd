@@ -47,7 +47,7 @@ func TestConfigReloadAtomicRollback(t *testing.T) {
 	if err := manager.Reload(); err == nil {
 		t.Fatal("unreachable candidate dependency accepted")
 	}
-	if Get() != previous || previous.Finder.ctx.Err() != nil {
+	if Get() != previous || previous.Finder.runtime.ctx.Err() != nil {
 		t.Fatal("failed preparation revoked active configuration")
 	}
 	write("log_level: DEBUG\n")
@@ -60,7 +60,7 @@ func TestConfigReloadAtomicRollback(t *testing.T) {
 	if GetFinder().GetBackend("live", "existing") != "127.0.0.1" {
 		t.Fatal("reload lost local discovery")
 	}
-	if previous.Finder.ctx.Err() == nil {
+	if previous.Finder.runtime.ctx.Err() == nil {
 		t.Fatal("retired discovery context still active")
 	}
 }

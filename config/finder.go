@@ -28,13 +28,14 @@ type Finder struct {
 	EnableRelay bool          `json:"enable_relay"`
 	Separator   string        `json:"separator"`
 	Redis       *RedisConfig  `json:"redis"`
-	ctx         context.Context
-	cancel      context.CancelFunc
-	confd       map[string]*confd
 	runtime     *finderRuntime
 }
 
+// finderRuntime owns the resources of one prepared discovery generation.
 type finderRuntime struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	confd  map[string]*confd
 	client *redis.Client
 	advice string
 	wg     sync.WaitGroup
@@ -85,17 +86,16 @@ func (finder *Finder) init(ctx context.Context, apps map[string]*App) error {
 	if err := finder.check(); err != nil {
 		return err
 	}
-	finder.confd = make(map[string]*confd)
+	finder.runtime = &finderRuntime{confd: make(map[string]*confd)}
 	for name := range apps {
 		database := "0"
 		if finder.Redis != nil {
 			database = strconv.Itoa(finder.Redis.DB)
 		}
 		prefix := finder.transform("/streamd/" + name + "/")
-		finder.confd[name] = &confd{prefix: prefix, channels: "__keyspace@" + database + "__:" + prefix, cache: make(map[string]string)}
+		finder.runtime.confd[name] = &confd{prefix: prefix, channels: "__keyspace@" + database + "__:" + prefix, cache: make(map[string]string)}
 	}
-	finder.ctx, finder.cancel = context.WithCancel(ctx)
-	finder.runtime = &finderRuntime{}
+	finder.runtime.ctx, finder.runtime.cancel = context.WithCancel(ctx)
 	return nil
 }
 
@@ -138,7 +138,7 @@ func (finder *Finder) validate(ctx context.Context, apps map[string]*App) error 
 		return err
 	}
 	finder.runtime.advice = advertisement
-	for _, cache := range finder.confd {
+	for _, cache := range finder.runtime.confd {
 		if err := finder.prepareWrites(probe, cache); err != nil {
 			finder.Close()
 			return err
@@ -179,7 +179,7 @@ func (finder *Finder) monitor(cache *confd, subscription *redis.PubSub) {
 	messages := subscription.Channel()
 	for {
 		select {
-		case <-finder.ctx.Done():
+		case <-finder.runtime.ctx.Done():
 			return
 		case _, ok := <-messages:
 			if !ok {
@@ -197,7 +197,7 @@ func (finder *Finder) Close() {
 		return
 	}
 	finder.runtime.once.Do(func() {
-		finder.cancel()
+		finder.runtime.cancel()
 		finder.runtime.wg.Wait()
 		if finder.runtime.client != nil {
 			_ = finder.runtime.client.Close()
@@ -214,7 +214,7 @@ func (finder *Finder) GetAdvice() string {
 }
 
 func (finder *Finder) GetBackend(app, instance string) string {
-	if cache := finder.confd[app]; cache != nil {
+	if cache := finder.cacheFor(app); cache != nil {
 		return cache.getValue(finder.clean(cache.prefix + instance))
 	}
 	return ""
@@ -224,11 +224,11 @@ func (finder *Finder) Keepalive(app, instance string) bool {
 	if finder.Redis == nil {
 		return false
 	}
-	cache := finder.confd[app]
+	cache := finder.cacheFor(app)
 	if cache == nil {
 		return false
 	}
-	extended, err := finder.redisClient().Expire(finder.ctx, cache.prefix+instance, finder.Expire*time.Second).Result()
+	extended, err := finder.redisClient().Expire(finder.runtime.ctx, cache.prefix+instance, finder.Expire*time.Second).Result()
 	if err != nil {
 		log.Error("Redis keepalive: ", err)
 	}
@@ -236,7 +236,7 @@ func (finder *Finder) Keepalive(app, instance string) bool {
 }
 
 func (finder *Finder) Register(app, instance string) {
-	cache := finder.confd[app]
+	cache := finder.cacheFor(app)
 	if cache == nil {
 		return
 	}
@@ -250,17 +250,17 @@ func (finder *Finder) Register(app, instance string) {
 		cache.m.Unlock()
 		return
 	}
-	if err := finder.redisClient().Set(finder.ctx, cache.prefix+instance, finder.GetAdvice(), finder.Expire*time.Second).Err(); err != nil {
+	if err := finder.redisClient().Set(finder.runtime.ctx, cache.prefix+instance, finder.GetAdvice(), finder.Expire*time.Second).Err(); err != nil {
 		log.Error("Redis register: ", err)
 		return
 	}
-	if err := finder.redisClient().Publish(finder.ctx, cache.channels, "set").Err(); err != nil {
+	if err := finder.redisClient().Publish(finder.runtime.ctx, cache.channels, "set").Err(); err != nil {
 		log.Error("Redis notify: ", err)
 	}
 }
 
 func (finder *Finder) Deregister(app, instance string) {
-	cache := finder.confd[app]
+	cache := finder.cacheFor(app)
 	if cache == nil {
 		return
 	}
@@ -270,7 +270,7 @@ func (finder *Finder) Deregister(app, instance string) {
 		cache.m.Unlock()
 		return
 	}
-	cleanup, cancel := context.WithTimeout(context.WithoutCancel(finder.ctx), 2*time.Second)
+	cleanup, cancel := context.WithTimeout(context.WithoutCancel(finder.runtime.ctx), 2*time.Second)
 	defer cancel()
 	if err := finder.redisClient().Del(cleanup, cache.prefix+instance).Err(); err != nil {
 		log.Error("Redis deregister: ", err)
@@ -285,13 +285,38 @@ func (finder *Finder) FindAdvice(app, instance string) (string, error) {
 	if finder.Redis == nil {
 		return "", nil
 	}
-	cache := finder.confd[app]
+	cache := finder.cacheFor(app)
 	if cache == nil {
 		return "", nil
 	}
-	advice, err := finder.redisClient().Get(finder.ctx, cache.prefix+instance).Result()
+	advice, err := finder.redisClient().Get(finder.runtime.ctx, cache.prefix+instance).Result()
 	if errors.Is(err, redis.Nil) {
 		return "", nil
 	}
 	return advice, err
+}
+
+// cacheFor preserves empty lookup behavior before discovery is initialized.
+func (finder *Finder) cacheFor(app string) *confd {
+	if finder.runtime == nil {
+		return nil
+	}
+	return finder.runtime.confd[app]
+}
+
+// inheritLocalRegistrations prepares an unpublished generation. Redis-backed
+// discovery loads its own cache from Redis during preparation instead.
+func (finder *Finder) inheritLocalRegistrations(previous *Finder) {
+	if previous.Redis != nil || finder.Redis != nil || previous.runtime == nil || finder.runtime == nil {
+		return
+	}
+	for name, cache := range previous.runtime.confd {
+		if next := finder.cacheFor(name); next != nil {
+			cache.m.RLock()
+			for key, value := range cache.cache {
+				next.cache[key] = value
+			}
+			cache.m.RUnlock()
+		}
+	}
 }

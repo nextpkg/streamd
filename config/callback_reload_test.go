@@ -43,7 +43,7 @@ func TestCallbackCandidateRollbackAndRemoval(test *testing.T) {
 		original := events[field]
 		events[field] = "file:///invalid-callback"
 		write()
-		if err := manager.Reload(); err == nil || manager.Version() != 1 || Get() != previous || previous.GetApp("events") != previousApp || previous.Finder.ctx.Err() != nil {
+		if err := manager.Reload(); err == nil || manager.Version() != 1 || Get() != previous || previous.GetApp("events") != previousApp || previous.Finder.runtime.ctx.Err() != nil {
 			test.Fatalf("invalid %s changed the active snapshot: %v", field, err)
 		}
 		events[field] = original

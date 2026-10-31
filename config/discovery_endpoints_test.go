@@ -179,7 +179,7 @@ func TestInvalidDiscoveryEndpointReloadRetainsActiveSnapshot(test *testing.T) {
 	if err := os.WriteFile(filename, []byte(`{"finder":{"advice":"peer:1935","http_advice":"http://bad:8080"}}`), 0600); err != nil {
 		test.Fatal(err)
 	}
-	if err := manager.Reload(); err == nil || Get() != previous || manager.Version() != 1 || GetFinder().GetBackend("live", "sample") != value || previous.Finder.ctx.Err() != nil {
+	if err := manager.Reload(); err == nil || Get() != previous || manager.Version() != 1 || GetFinder().GetBackend("live", "sample") != value || previous.Finder.runtime.ctx.Err() != nil {
 		test.Fatal("invalid endpoint changed or revoked the active finder")
 	}
 }

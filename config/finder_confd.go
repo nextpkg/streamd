@@ -51,7 +51,7 @@ func (f *Finder) clean(key string) string {
 }
 
 func (f *Finder) makeCache(key string) (map[string]string, error) {
-	return f.makeCacheContext(f.ctx, key)
+	return f.makeCacheContext(f.runtime.ctx, key)
 }
 
 func (f *Finder) makeCacheContext(ctx context.Context, key string) (map[string]string, error) {
@@ -125,7 +125,7 @@ func (f *Finder) makeCacheContext(ctx context.Context, key string) (map[string]s
 
 func (f *Finder) watch(rpb *redis.PubSub) error {
 	for {
-		n, err := rpb.Receive(f.ctx)
+		n, err := rpb.Receive(f.runtime.ctx)
 		if err != nil {
 			return err
 		}
@@ -151,13 +151,13 @@ func (f *Finder) watch(rpb *redis.PubSub) error {
 }
 
 func (f *Finder) store(c *confd) error {
-	return f.storeContext(f.ctx, c)
+	return f.storeContext(f.runtime.ctx, c)
 }
 
 func (f *Finder) storeContext(ctx context.Context, c *confd) error {
 	vars, err := f.makeCacheContext(ctx, c.prefix)
 	if err != nil {
-		if f.ctx.Err() == nil {
+		if f.runtime.ctx.Err() == nil {
 			log.Error("Redis refresh: ", err)
 		}
 		return err

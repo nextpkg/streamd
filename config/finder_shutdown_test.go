@@ -51,8 +51,8 @@ func TestRedisDeregisterKeepsBoundedCleanupAfterRuntimeCancellation(test *testin
 				return nil
 			})
 			finder.Redis = &RedisConfig{DB: 13}
-			finder.confd["live"] = &confd{prefix: "/streamd/live/", channels: "__keyspace@13__:/streamd/live/"}
-			finder.cancel()
+			finder.runtime.confd["live"] = &confd{prefix: "/streamd/live/", channels: "__keyspace@13__:/streamd/live/"}
+			finder.runtime.cancel()
 			finder.Deregister("live", "sample")
 			expected := []string{"del", "publish"}
 			if denied {

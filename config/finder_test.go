@@ -20,17 +20,17 @@ func TestFinder_init(t *testing.T) {
 	at.Nil(cfgFinder.init(context.Background(), nil))
 	at.Equal(time.Duration(60), cfgFinder.Expire)
 	at.Equal(time.Duration(30), cfgFinder.Interval)
-	at.Len(cfgFinder.confd, 0)
+	at.Len(cfgFinder.runtime.confd, 0)
 
 	apps := make(map[string]*App)
 	apps["test1"] = nil
 	apps["test2"] = nil
 	at.Nil(cfgFinder.init(context.Background(), apps))
 
-	at.Len(cfgFinder.confd, 2)
-	at.Equal("/streamd/test1/", cfgFinder.confd["test1"].prefix)
-	at.Equal("__keyspace@0__:/streamd/test1/", cfgFinder.confd["test1"].channels)
-	at.Len(cfgFinder.confd["test1"].cache, 0)
+	at.Len(cfgFinder.runtime.confd, 2)
+	at.Equal("/streamd/test1/", cfgFinder.runtime.confd["test1"].prefix)
+	at.Equal("__keyspace@0__:/streamd/test1/", cfgFinder.runtime.confd["test1"].channels)
+	at.Len(cfgFinder.runtime.confd["test1"].cache, 0)
 
 	at.Equal("127.0.0.1", cfgFinder.Advice)
 	at.Equal("", cfgFinder.GetAdvice())
