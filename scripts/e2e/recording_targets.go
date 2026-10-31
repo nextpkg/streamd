@@ -261,10 +261,8 @@ func (harness *harness) recordingTargets() (result error) {
 	if err := harness.finishPlayers(players, 1125); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 70*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 70*time.Second); err != nil {
+		return err
 	}
 	if err := harness.until("natural recording completion callbacks", 5*time.Second, func() (bool, error) {
 		inventory, err := harness.recordingTargetInventory(reader, cosStore, false)

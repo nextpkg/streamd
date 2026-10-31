@@ -343,12 +343,8 @@ func (harness *harness) proxyMedia() (failure error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("proxy playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("proxy playback warmup: %w", err)
 	}
 	baseline := map[string]int{}
 	for _, app := range []string{"flv", "ts"} {
@@ -685,10 +681,8 @@ func (harness *harness) proxyMedia() (failure error) {
 		disconnections[app] = map[string]any{"exit_code": code, "stderr": string(body), "frames_before_sigterm": activeFrames[app], "active_before_sigterm": true}
 	}
 	harness.results["graceful_shutdown_with_proxy_requests"] = map[string]any{"seconds": elapsed, "exit_code": 0, "active_media": disconnections, "stalled_segments": shutdownClosures, "pending_callback_cancelled": true, "source_publishers_active": 2}
-	for app, child := range publishers {
-		if err := source.finish("publish-"+app, child, 30*time.Second); err != nil {
-			return err
-		}
+	if err := source.finishPublishers(publishers, "publish-", 30*time.Second); err != nil {
+		return err
 	}
 	if err := source.until("typed registrations removed before TTL expires", 3*time.Second, func() (bool, error) {
 		if !time.Now().Before(minimumExpiry) {

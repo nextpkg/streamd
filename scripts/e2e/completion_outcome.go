@@ -231,10 +231,8 @@ func (harness *harness) completionOutcome() (result error) {
 	if err := harness.finishPlayers(players, 1125); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 75*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 75*time.Second); err != nil {
+		return err
 	}
 	files, err := recordingFiles(filepath.Join(harness.evidence, "recovered"))
 	if err != nil {

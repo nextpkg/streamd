@@ -387,8 +387,12 @@ func (harness *harness) waitPlaylist(app string) (string, error) {
 }
 
 func (harness *harness) publish(name, app, fixture string, seconds int) (*process, error) {
+	return harness.publishFile(name, app, filepath.Join(harness.root, "testdata", "generated", fixture+".flv"), seconds)
+}
+
+func (harness *harness) publishFile(name, app, source string, seconds int) (*process, error) {
 	return harness.launch(name, "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-xerror", "-re", "-stream_loop", "-1",
-		"-i", filepath.Join(harness.root, "testdata", "generated", fixture+".flv"), "-t", strconv.Itoa(seconds), "-c", "copy", "-f", "flv",
+		"-i", source, "-t", strconv.Itoa(seconds), "-c", "copy", "-f", "flv",
 		fmt.Sprintf("rtmp://127.0.0.1:%d/%s/sample", harness.rtmpPort, app))
 }
 
@@ -429,13 +433,10 @@ func (harness *harness) finishPlayers(players map[string]*process, minimumFrames
 		if err != nil {
 			return err
 		}
-		frames, err := decodedFrames(string(progress))
-		if err != nil {
-			return err
-		}
+		frames, err := validateDecodedFrames(string(progress), minimumFrames)
 		harness.results["decoded_frames-"+name] = frames
-		if frames < minimumFrames {
-			return fmt.Errorf("%s decoded %d frames, need at least %d", name, frames, minimumFrames)
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
 		}
 	}
 	return nil

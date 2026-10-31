@@ -119,12 +119,8 @@ func (harness *harness) rtmpLifecycle() (failure error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("healthy playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("healthy playback warmup: %w", err)
 	}
 	baseline, err := harness.goroutines()
 	if err != nil {

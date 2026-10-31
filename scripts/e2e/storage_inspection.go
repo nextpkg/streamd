@@ -248,12 +248,8 @@ func (harness *harness) storageInspection(removeApplications, retryCompletion bo
 	watch := harness.watchPlayback(players)
 	defer func() { result = errors.Join(result, watch.finish(harness)) }()
 	if removeApplications {
-		select {
-		case <-watch.ready:
-		case <-watch.done:
-			return fmt.Errorf("playback warmup: %w", watch.err)
-		case <-harness.ctx.Done():
-			return harness.ctx.Err()
+		if err := watch.waitReady(harness.ctx); err != nil {
+			return fmt.Errorf("playback warmup: %w", err)
 		}
 		harness.settings.Application = nil
 		if err := harness.commit("remove applications while preserving existing recordings and maintenance", map[componentKey]string{

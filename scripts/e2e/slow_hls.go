@@ -157,7 +157,7 @@ func (harness *harness) slowHLS() (failure error) {
 	}
 	publishers := map[string]*process{}
 	for _, app := range []string{"flv", "ts"} {
-		child, err := harness.launch("publish-"+app, "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-xerror", "-re", "-stream_loop", "-1", "-i", fixture, "-t", "60", "-c", "copy", "-f", "flv", fmt.Sprintf("rtmp://127.0.0.1:%d/%s/sample", harness.rtmpPort, app))
+		child, err := harness.publishFile("publish-"+app, app, fixture, 60)
 		if err != nil {
 			return err
 		}
@@ -169,12 +169,8 @@ func (harness *harness) slowHLS() (failure error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("healthy playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("healthy playback warmup: %w", err)
 	}
 	before, err := harness.goroutines()
 	if err != nil {
@@ -274,10 +270,8 @@ func (harness *harness) slowHLS() (failure error) {
 	if err := harness.finishPlayers(players, 1000); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 75*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 75*time.Second); err != nil {
+		return err
 	}
 	for _, app := range []string{"flv", "ts"} {
 		location, _, err := harness.largeSegment(app)

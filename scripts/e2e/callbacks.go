@@ -237,10 +237,8 @@ func (harness *harness) callbackMedia() error {
 	if err := watch.finish(harness); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 70*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 70*time.Second); err != nil {
+		return err
 	}
 	var counts map[string]int
 	if err := harness.until("complete callback/file pairs and two pending publication callbacks", 1500*time.Millisecond, func() (bool, error) {

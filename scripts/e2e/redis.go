@@ -179,10 +179,8 @@ func (harness *harness) redisDiscovery() (result error) {
 	if err := harness.finishPlayers(players, 46*25*9/10); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 75*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 75*time.Second); err != nil {
+		return err
 	}
 	if err := harness.until("natural disconnect deregistration", 4*time.Second, func() (bool, error) {
 		count, err := replacement.client.Exists(harness.ctx, "/streamd/flv/sample", "/streamd/ts/sample").Result()

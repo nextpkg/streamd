@@ -115,10 +115,8 @@ func (harness *harness) redisPrepareMedia() (result error) {
 	if err := harness.finishPlayers(players, 46*25*9/10); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 20*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 20*time.Second); err != nil {
+		return err
 	}
 	if err := harness.until("registrations and probes removed", 4*time.Second, func() (bool, error) {
 		keys, err := container.client.Keys(harness.ctx, "/streamd/*").Result()

@@ -237,10 +237,8 @@ func (harness *harness) resourceBaseline() (result error) {
 		return errors.New("missing first decoded frame observations")
 	}
 	harness.results["first_frame_seconds_since_batch_launch"] = firstFrames
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 15*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 15*time.Second); err != nil {
+		return err
 	}
 	if err := harness.sleep(10 * time.Second); err != nil {
 		return err
