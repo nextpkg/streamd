@@ -125,55 +125,28 @@ func (s *Stream) Finish() error {
 // 分离FLV和数据
 func (s *Stream) unpack(p *packet.Packet) bool {
 	s.cache.isKeyframe = false
-	header := p.Header
-
-	switch p.Type {
-	case packet.PktVideo:
-		vh := header.(packet.VideoPacketHeader)
-
-		// 暂只支持H264
-		if !vh.IsCodecAvc() {
-			log.Errorf("support H264 only,key='%s',code id=%d", s.Info().Key, vh.CodecID())
-			return false
-		}
-
-		if vh.IsSeqHdr() {
-			err := s.mixer.SaveAVCHeader(p)
-			if err != nil {
-				log.Error(err)
-			}
-
-			return false
-		}
-
-		if vh.IsEndOfSeq() {
-			return false
-		}
-
-		s.cache.isKeyframe = vh.IsKeyFrame()
-		s.cache.composition = uint32(vh.CompositionTime())
-	case packet.PktAudio:
-		ah := header.(packet.AudioPacketHeader)
-
-		// 只支持aac
-		if !ah.IsSoundAAC() {
-			log.Errorf("support AAC only,key='%s',sound format=%d", s.Info().Key, ah.SoundFormat())
-			return false
-		}
-
-		if ah.IsAACSeqHdr() {
-			err := s.mixer.SaveAACHeader(p)
-			if err != nil {
-				log.Error(err)
-			}
-
-			return false
-		}
-	case packet.PktMetadata:
-		// 忽略所有的"metadata", 以免造成"metadata"污染
+	media, err := packet.ClassifyMedia(p)
+	if err != nil {
+		log.Errorf("%s,key='%s'", err, s.Info().Key)
 		return false
 	}
-
+	switch media.Kind {
+	case packet.MediaIgnored:
+		return false
+	case packet.MediaVideo:
+		s.cache.isKeyframe = media.Keyframe
+		s.cache.composition = uint32(media.CompositionTime)
+	case packet.MediaAVCHeader:
+		if err := s.mixer.SaveAVCHeader(p); err != nil {
+			log.Error(err)
+		}
+		return false
+	case packet.MediaAACHeader:
+		if err := s.mixer.SaveAACHeader(p); err != nil {
+			log.Error(err)
+		}
+		return false
+	}
 	return true
 }
 
