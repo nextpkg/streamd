@@ -13,6 +13,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
+	"github.com/nextpkg/streamd/metrics"
 )
 
 type callbackCompletionDriver struct {
@@ -97,7 +98,7 @@ func TestRecordingCompletionCallbackExcludesPauseAndFinalizerFailure(t *testing.
 			}
 			store.dr = driver
 			store.isOpen.Store(true)
-			online.Add(1)
+			metrics.AddGlobal(metrics.Recording, 1)
 			store.nTime = time.Unix(settings.Normalize(time.Now().Unix()), 0)
 			if scenario != "pause" {
 				store.ForceCompletion()

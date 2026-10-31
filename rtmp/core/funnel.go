@@ -12,15 +12,6 @@ import (
 	"sync/atomic"
 )
 
-var online atomic.Int64
-var onlineMetrics sync.Mutex
-
-func updateOnline(delta int64) {
-	onlineMetrics.Lock()
-	defer onlineMetrics.Unlock()
-	metrics.GaugeGlobal(metrics.Playback, float64(online.Add(delta)))
-}
-
 // 必须大于1
 const maxQueueLen = 4096
 
@@ -58,7 +49,7 @@ func NewFunnel(t Terminal) *Funnel {
 	}
 
 	ret.wg.Add(1)
-	updateOnline(1)
+	metrics.AddGlobal(metrics.Playback, 1)
 	go ret.processor()
 
 	return ret
@@ -142,7 +133,7 @@ func (f *Funnel) Close() {
 		return
 	}
 
-	updateOnline(-1)
+	metrics.AddGlobal(metrics.Playback, -1)
 
 	close(f.pktChan)
 	if _, interruptible := f.Terminal.(interface{ Abort() }); interruptible && !f.aborted.Load() {

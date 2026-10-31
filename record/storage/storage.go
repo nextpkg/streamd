@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/nextpkg/streamd/base"
@@ -21,15 +20,6 @@ import (
 	"github.com/nextpkg/streamd/record/storage/driver/file"
 	"sync/atomic"
 )
-
-var online atomic.Int64
-var onlineMetrics sync.Mutex
-
-func reportOnline(delta int64) {
-	onlineMetrics.Lock()
-	defer onlineMetrics.Unlock()
-	metrics.GaugeGlobal(metrics.Recording, float64(online.Add(delta)))
-}
 
 // Storage 存储服务
 type Storage struct {
@@ -138,7 +128,7 @@ func (s *Storage) Open() (result error) {
 		return err
 	}
 
-	reportOnline(1)
+	metrics.AddGlobal(metrics.Recording, 1)
 	s.size = 0
 	s.resumeFailed = false
 	s.lastError = nil
@@ -234,7 +224,7 @@ func (s *Storage) Close(block bool) (result error) {
 		return nil
 	}
 
-	reportOnline(-1)
+	metrics.AddGlobal(metrics.Recording, -1)
 	metrics.Counter(s.info.App, s.info.Instance, metrics.RecordingTime, float64(time.Now().Unix()-s.cTime.Unix()))
 	metrics.Counter(s.info.App, s.info.Instance, metrics.RecordingSize, float64(s.size))
 

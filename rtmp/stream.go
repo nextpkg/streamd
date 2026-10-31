@@ -22,15 +22,6 @@ import (
 	"sync/atomic"
 )
 
-var online atomic.Int64
-var onlineMetrics sync.Mutex
-
-func reportOnline(delta int64) {
-	onlineMetrics.Lock()
-	defer onlineMetrics.Unlock()
-	metrics.GaugeGlobal(metrics.Channels, float64(online.Add(delta)))
-}
-
 // Stream RTMP流
 type Stream struct {
 	sync.RWMutex
@@ -202,7 +193,7 @@ func (s *Stream) removeWriter(w *StreamWriter, key interface{}, abort bool) {
 
 // 服务注册
 func (s *Stream) register() {
-	reportOnline(1)
+	metrics.AddGlobal(metrics.Channels, 1)
 
 	// 只有属于内部服务的才会被记录下来, 外部服务(指通过回源方式)不会被上报
 	if s.info.IsExternal {
@@ -251,7 +242,7 @@ func (s *Stream) register() {
 
 // 服务注销
 func (s *Stream) deregister() {
-	reportOnline(-1)
+	metrics.AddGlobal(metrics.Channels, -1)
 
 	// 只有属于内部服务的才会被记录下来, 外部服务(指通过回源方式)不会被上报，因此也不需要被注销
 	if s.info.IsExternal {
