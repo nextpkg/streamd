@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -54,14 +53,10 @@ func filesystemClockBounds(sample filesystemClockSample) (int64, int64, error) {
 }
 
 func (container *filesystemContainer) sampleClock(harness *harness) (filesystemClockSample, error) {
-	if container.runner.context != "colima-native" {
-		return filesystemClockSample{}, errors.New("filesystem callback fixture requires the native Colima clock route")
-	}
 	ctx, cancel := context.WithTimeout(harness.ctx, 5*time.Second)
 	defer cancel()
-	command := exec.CommandContext(ctx, "colima", "ssh", "--profile", "native", "--", "date", "+%s%N")
 	sample := filesystemClockSample{BeforeNS: time.Now().UnixNano()}
-	body, err := command.Output()
+	body, err := container.runner.command(ctx, "exec", container.runner.name, "/test-clock")
 	sample.AfterNS = time.Now().UnixNano()
 	if err != nil {
 		return sample, err
