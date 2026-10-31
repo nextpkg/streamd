@@ -7,6 +7,7 @@ import (
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/internal/mediatime"
+	"github.com/nextpkg/streamd/metrics"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,7 +37,7 @@ func TestFailedMediaRestoreCannotAppendOrFinalize(test *testing.T) {
 		store := NewStorage(base.NewInfo("test", "sample", false), &config.AppRecorder{SaveAs: "flv", Driver: "aws", SaveMode: "round", Segment: 900}, NewEvent())
 		store.dr = driver
 		store.isOpen.Store(true)
-		online.Add(1)
+		metrics.AddGlobal(metrics.Recording, 1)
 		initialized, resumed := false, false
 		_, err := store.Resume(func(io.ReaderAt, int64) (uint32, error) { initialized = true; return 0, nil }, func(offset uint32) (uint32, error) { resumed = true; return offset, nil })
 		require.Error(test, err)

@@ -9,6 +9,7 @@ import (
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/internal/appstate"
+	"github.com/nextpkg/streamd/metrics"
 )
 
 type rotationDriver struct {
@@ -42,7 +43,7 @@ func TestOrdinaryRotationDoesNotWaitOrReportPrematureCompletion(test *testing.T)
 			store.dr, store.fullRela = driver, "/rotation/"+mode+"/first.flv"
 			store.nTime = time.Unix(settings.Normalize(time.Now().Unix()), 0)
 			store.isOpen.Store(true)
-			online.Add(1)
+			metrics.AddGlobal(metrics.Recording, 1)
 			if mode != "pause" {
 				store.ForceCompletion()
 			}
@@ -119,7 +120,7 @@ func TestRotationFailurePreservesCurrentStateAndOwner(test *testing.T) {
 		store := NewStorage(info, settings, NewEvent())
 		store.dr = driver
 		store.isOpen.Store(true)
-		online.Add(1)
+		metrics.AddGlobal(metrics.Recording, 1)
 		if err := store.Close(false); err != nil {
 			test.Fatal(err)
 		}

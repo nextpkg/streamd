@@ -161,6 +161,21 @@ func (registry *Registry) Gauge(app, channel, name string, value float64) {
 	}
 }
 
+// AddGlobal atomically updates a lifecycle gauge and its exported value, using
+// the same lock as cluster changes so a retired label cannot be republished.
+func (registry *Registry) AddGlobal(name string, delta float64) float64 {
+	metric := registry.gauges[name]
+	if metric == nil {
+		return 0
+	}
+	registry.mutex.Lock()
+	defer registry.mutex.Unlock()
+	value := registry.globalGauges[name] + delta
+	registry.globalGauges[name] = value
+	metric.WithLabelValues("", "", registry.cluster).Set(value)
+	return value
+}
+
 func (registry *Registry) Counter(app, channel, name string, value float64) {
 	metric := registry.counters[name]
 	if metric == nil || value < 0 {
@@ -207,9 +222,10 @@ func (registry *Registry) ProxyRequestFinished(aborted bool) {
 func ProxyRequestStarted()              { defaultRegistry.ProxyRequestStarted() }
 func ProxyRequestFinished(aborted bool) { defaultRegistry.ProxyRequestFinished(aborted) }
 
-func SetCluster(cluster string)              { defaultRegistry.SetCluster(cluster) }
-func Handler() http.Handler                  { return defaultRegistry.Handler() }
-func GaugeGlobal(name string, value float64) { Gauge("", "", name, value) }
+func SetCluster(cluster string)                    { defaultRegistry.SetCluster(cluster) }
+func Handler() http.Handler                        { return defaultRegistry.Handler() }
+func AddGlobal(name string, delta float64) float64 { return defaultRegistry.AddGlobal(name, delta) }
+func GaugeGlobal(name string, value float64)       { Gauge("", "", name, value) }
 func Gauge(app, channel, name string, value float64) {
 	defaultRegistry.Gauge(app, channel, name, value)
 }
