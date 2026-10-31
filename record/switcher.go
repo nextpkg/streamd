@@ -6,6 +6,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
+	"github.com/nextpkg/streamd/internal/appstate"
 	log "github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/record/flv"
@@ -38,7 +39,7 @@ type switchingWriter struct {
 
 func newSwitchingWriter(info *base.Info, connect *base.ConnectInfo) *switchingWriter {
 	writer := &switchingWriter{Universal: core.NewUniversal(info), connect: connect, finalizationBudget: storage.NewFinalizationBudget()}
-	config.StartApplication("recording", info.Key, info.UID, config.Get().Revision, "waiting_keyframe")
+	appstate.Start("recording", info.Key, info.UID, config.Get().Revision, "waiting_keyframe")
 	return writer
 }
 
@@ -49,7 +50,7 @@ func (writer *switchingWriter) Write(frame *packet.Packet) error {
 	snapshot := config.Get()
 	if writer.seenRevision != snapshot.Revision {
 		writer.seenRevision = snapshot.Revision
-		config.ReportApplication("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_keyframe")
+		appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_keyframe")
 	}
 	if packet.IsVideoBoundary(frame) {
 		writer.apply(snapshot, frame.Baseline)
@@ -68,7 +69,7 @@ func (writer *switchingWriter) Write(frame *packet.Packet) error {
 	}
 	if err != nil {
 		if writer.store.WaitingFinalization() {
-			config.ReportApplication("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
+			appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
 			return nil
 		}
 		log.Errorf("[%s]recording failed: %s", writer.Info().Key, err)
@@ -96,12 +97,12 @@ func (writer *switchingWriter) apply(snapshot *config.Config, timestamp uint32) 
 	}
 	if writer.terminal != nil && (fingerprint != writer.fingerprint || writer.terminalFailed) && !writer.retire() {
 		writer.paused = true
-		config.ReportApplication("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
+		appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
 		return
 	}
 	if settings.Enable && writer.finalizingTarget(settings) {
 		writer.paused = true
-		config.ReportApplication("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
+		appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
 		return
 	}
 	writer.paused = false
@@ -110,7 +111,7 @@ func (writer *switchingWriter) apply(snapshot *config.Config, timestamp uint32) 
 	}
 	writer.settings, writer.fingerprint = settings, fingerprint
 	if !settings.Enable {
-		config.ReportApplication("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "disabled")
+		appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "disabled")
 		return
 	}
 	if writer.terminal == nil {
@@ -126,7 +127,7 @@ func (writer *switchingWriter) apply(snapshot *config.Config, timestamp uint32) 
 		case config.AsTs:
 			writer.terminal = ts.NewTerminal(writer.Info(), writer.store)
 		default:
-			config.ReportApplicationFailure("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision)
+			appstate.ReportFailure("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision)
 			return
 		}
 		writer.start = timestamp
@@ -136,7 +137,7 @@ func (writer *switchingWriter) apply(snapshot *config.Config, timestamp uint32) 
 			return
 		}
 	}
-	config.ReportApplication("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, state)
+	appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, state)
 }
 
 func recordingFingerprint(settings *config.AppRecorder) ([32]byte, error) {
@@ -162,5 +163,5 @@ func (writer *switchingWriter) After() {
 	for _, recording := range writer.finalizing {
 		<-recording.done
 	}
-	config.ForgetApplication("recording", writer.Info().Key, writer.Info().UID)
+	appstate.Forget("recording", writer.Info().Key, writer.Info().UID)
 }

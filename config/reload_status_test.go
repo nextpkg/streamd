@@ -24,22 +24,3 @@ func TestReloadDeduplicatesCanonicalConfiguration(t *testing.T) {
 	}
 	require.Equal(t, []string{"rtmp://localhost/one", "rtmp://localhost/two"}, Get().GetStaticPull("live"))
 }
-
-func TestApplicationStatusOwnership(t *testing.T) {
-	stream := t.Name()
-	StartApplication("hls", stream, "old", 1, "active")
-	StartApplication("hls", stream, "new", 2, "waiting_keyframe")
-	ReportApplication("hls", stream, "old", 1, "active")
-	ForgetApplication("hls", stream, "old")
-	value, exists := applications.Load("hls:" + stream)
-	require.True(t, exists)
-	require.Equal(t, uint64(2), value.(ApplicationStatus).Revision)
-	ReportApplicationFailure("hls", stream, "new", 2)
-	ReportApplication("hls", stream, "new", 2, "active")
-	value, _ = applications.Load("hls:" + stream)
-	require.Equal(t, uint64(1), value.(ApplicationStatus).Failures)
-	require.Positive(t, value.(ApplicationStatus).LastFailureAt)
-	ForgetApplication("hls", stream, "new")
-	_, exists = applications.Load("hls:" + stream)
-	require.False(t, exists)
-}

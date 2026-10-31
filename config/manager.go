@@ -19,6 +19,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/nextpkg/streamd/base"
+	"github.com/nextpkg/streamd/internal/appstate"
 	log "github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 	"go.yaml.in/yaml/v3"
@@ -297,6 +298,6 @@ func (cfg *Config) Redacted() map[string]any {
 	}
 	redact(document)
 	document["_revision"] = cfg.Revision
-	document["_components"] = ApplicationStates()
+	document["_components"] = appstate.Snapshot()
 	return document
 }

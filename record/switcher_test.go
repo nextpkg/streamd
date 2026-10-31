@@ -8,6 +8,7 @@ import (
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
 	containerflv "github.com/nextpkg/streamd/container/flv"
+	"github.com/nextpkg/streamd/internal/appstate"
 	"github.com/nextpkg/streamd/packet"
 	recordflv "github.com/nextpkg/streamd/record/flv"
 	recordts "github.com/nextpkg/streamd/record/ts"
@@ -87,8 +88,8 @@ func TestRecordingBoundarySwitchAndFailureIsolation(t *testing.T) {
 	config.Get().SetApp(info.App, &broken)
 	require.NoError(t, writer.Write(keyframe), "recording failure must not propagate to live media")
 	require.Nil(t, writer.terminal)
-	var failed config.ApplicationStatus
-	for _, state := range config.ApplicationStates() {
+	var failed appstate.Status
+	for _, state := range appstate.Snapshot() {
 		if state.Component == "recording" && state.Stream == info.Key {
 			failed = state
 		}
@@ -100,7 +101,7 @@ func TestRecordingBoundarySwitchAndFailureIsolation(t *testing.T) {
 	config.Get().SetApp(info.App, &repaired)
 	require.NoError(t, writer.Write(keyframe))
 	require.NotNil(t, writer.terminal)
-	for _, state := range config.ApplicationStates() {
+	for _, state := range appstate.Snapshot() {
 		if state.Component == "recording" && state.Stream == info.Key {
 			require.Equal(t, "active", state.State)
 			require.Equal(t, uint64(1), state.Failures, "successful recovery must not erase failure evidence")
