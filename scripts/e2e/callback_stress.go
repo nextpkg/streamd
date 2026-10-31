@@ -224,12 +224,8 @@ func (harness *harness) callbackStress() (failure error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("callback pressure warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("callback pressure warmup: %w", err)
 	}
 	clients := make([]*core.ConnClient, 32)
 	defer func() {

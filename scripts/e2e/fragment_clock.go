@@ -181,10 +181,8 @@ func (harness *harness) fragmentClock() error {
 	if err := watch.finish(harness); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 5*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 5*time.Second); err != nil {
+		return err
 	}
 	if err := harness.finishLiveIdentityCaptures(captures, source); err != nil {
 		return err

@@ -240,10 +240,8 @@ func (harness *harness) roundExpiry() (result error) {
 	if err := harness.finishPlayers(players, 1125); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 70*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 70*time.Second); err != nil {
+		return err
 	}
 	var final roundExpiryState
 	if err := harness.until("round final callback pairs", 5*time.Second, func() (bool, error) {

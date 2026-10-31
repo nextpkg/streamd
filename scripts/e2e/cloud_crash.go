@@ -278,10 +278,8 @@ func (harness *harness) cloudCrashConfirmed(backend *storageFaultBackend, client
 			return err
 		}
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("append-"+app, publisher, 15*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "append-", 15*time.Second); err != nil {
+		return err
 	}
 	if err := harness.cloudCrashRetired(); err != nil {
 		return err
@@ -363,12 +361,8 @@ func (harness *harness) cloudCrashLiveRecovery(backend *storageFaultBackend, cli
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { result = errors.Join(result, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("cloud crash playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("cloud crash playback warmup: %w", err)
 	}
 	if mode != "confirmed" {
 		if err := harness.until("unsafe cloud resume visibly rejected while live playback continues", 8*time.Second, func() (bool, error) {
@@ -401,10 +395,8 @@ func (harness *harness) cloudCrashLiveRecovery(backend *storageFaultBackend, cli
 	if err := harness.finishPlayers(players, 675); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 20*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 20*time.Second); err != nil {
+		return err
 	}
 	if err := harness.cloudCrashRetired(); err != nil {
 		return err

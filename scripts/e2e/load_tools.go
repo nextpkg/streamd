@@ -201,12 +201,8 @@ func (harness *harness) loadTools() (failure error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { failure = errors.Join(failure, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("baseline playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("baseline playback warmup: %w", err)
 	}
 	baseline, err := harness.subscribers()
 	if err != nil {
@@ -337,10 +333,8 @@ func (harness *harness) loadTools() (failure error) {
 	if err := harness.finishPlayers(players, 1000); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 65*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 65*time.Second); err != nil {
+		return err
 	}
 	if err := harness.stopServer(); err != nil {
 		return err

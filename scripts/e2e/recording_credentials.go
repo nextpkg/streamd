@@ -297,10 +297,8 @@ func (harness *harness) recordingCredentials() (result error) {
 	if err := harness.finishPlayers(players, 1125); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 70*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 70*time.Second); err != nil {
+		return err
 	}
 	if err := harness.stopServer(); err != nil {
 		return err

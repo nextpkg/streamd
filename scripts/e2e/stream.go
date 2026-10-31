@@ -118,10 +118,8 @@ func (harness *harness) stream(duration int) error {
 	if err := harness.finishPlayers(players, playSeconds*25*9/10); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, time.Duration(duration+10)*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", time.Duration(duration+10)*time.Second); err != nil {
+		return err
 	}
 	if err := harness.stopServer(); err != nil {
 		return err
@@ -267,10 +265,8 @@ func (harness *harness) republishWithCallbacks(callbacks *combinationReceiver, e
 	if err := harness.finishPlayers(players, 1100); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-final-"+app, child, 30*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-final-", 30*time.Second); err != nil {
+		return err
 	}
 	if callbacks != nil {
 		if err := harness.ordinaryCallbackPublications(callbacks, endpoint); err != nil {

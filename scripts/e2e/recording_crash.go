@@ -257,12 +257,8 @@ func (harness *harness) tornRecordingMedia(paths map[string]string, damaged map[
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { watch.cancel(); <-watch.done }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("torn recording playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("torn recording playback warmup: %w", err)
 	}
 	for _, app := range []string{"flv", "ts"} {
 		state, err := harness.waitRecording("torn "+app+" file rejection", app, 5*time.Second, func(state componentStatus) bool {
@@ -294,10 +290,8 @@ func (harness *harness) tornRecordingMedia(paths map[string]string, damaged map[
 	if err := watch.finish(harness); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-recovery-"+app, child, 35*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-recovery-", 35*time.Second); err != nil {
+		return err
 	}
 	if err := harness.stopServer(); err != nil {
 		return err

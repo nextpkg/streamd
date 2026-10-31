@@ -231,10 +231,8 @@ observation:
 			return fmt.Errorf("player %s lacks a complete progress end: %v", name, err)
 		}
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 45*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 45*time.Second); err != nil {
+		return err
 	}
 	if err := harness.metricSnapshot("stability-retired", cluster, false); err != nil {
 		return err

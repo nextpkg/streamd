@@ -86,14 +86,7 @@ func (harness *harness) faultPlayers() (map[string]*process, *playbackWatch, err
 		return nil, nil, err
 	}
 	watch := harness.watchPlayback(players)
-	select {
-	case <-watch.ready:
-		return players, watch, nil
-	case <-watch.done:
-		return players, watch, fmt.Errorf("playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return players, watch, harness.ctx.Err()
-	}
+	return players, watch, watch.waitReady(harness.ctx)
 }
 
 func (harness *harness) recordingStatus(app string) (componentStatus, error) {
@@ -172,10 +165,8 @@ func (harness *harness) finishFaultMedia(players, publishers map[string]*process
 	if err := harness.finishPlayers(players, 46*25*9/10); err != nil {
 		return err
 	}
-	for app, publisher := range publishers {
-		if err := harness.finish("publish-"+app, publisher, 75*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 75*time.Second); err != nil {
+		return err
 	}
 	for _, check := range beforeStop {
 		if err := check(); err != nil {
@@ -238,7 +229,7 @@ func (harness *harness) uploadFault() (result error) {
 	}
 	defer harness.cleanup()
 	publishers := make(map[string]*process)
-	publishers[faultApp], err = harness.launch("publish-"+faultApp, "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-xerror", "-re", "-stream_loop", "-1", "-i", source, "-t", "60", "-c", "copy", "-f", "flv", fmt.Sprintf("rtmp://127.0.0.1:%d/%s/sample", harness.rtmpPort, faultApp))
+	publishers[faultApp], err = harness.publishFile("publish-"+faultApp, faultApp, source, 60)
 	if err != nil {
 		return err
 	}

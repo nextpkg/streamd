@@ -96,12 +96,8 @@ func (harness *harness) applicationLifecycle() error {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { watch.cancel(); <-watch.done }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("initial playback: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("initial playback: %w", err)
 	}
 	if err := harness.unavailableApplication("missing", "unknown", false); err != nil {
 		return err
@@ -187,10 +183,8 @@ func (harness *harness) applicationLifecycle() error {
 	if err := watch.finish(harness); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 65*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 65*time.Second); err != nil {
+		return err
 	}
 	if err := harness.finish("publish-added", added, 30*time.Second); err != nil {
 		return err

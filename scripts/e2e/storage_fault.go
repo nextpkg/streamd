@@ -110,12 +110,8 @@ func (harness *harness) storageFault() (result error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { result = errors.Join(result, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("playback warmup: %w", err)
 	}
 	if err := harness.until("cloud recording active", 5*time.Second, func() (bool, error) {
 		report, err := harness.configuration()

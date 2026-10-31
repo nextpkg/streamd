@@ -356,12 +356,8 @@ func (harness *harness) adminStatistics() error {
 		}
 	}()
 	defer func() { stopTrace(); <-traceDone; harness.results["admin_playlist_trace"] = playlistTrace }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return watch.err
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return err
 	}
 	if err := harness.adminStage("live-viewers", 1, 3, 2, true); err != nil {
 		return err
@@ -459,10 +455,8 @@ func (harness *harness) adminStatistics() error {
 	if err := harness.adminStage("after-viewers", 1, 1, 0, true); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-final-"+app, child, 30*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-final-", 30*time.Second); err != nil {
+		return err
 	}
 	if err := harness.adminStage("after-publications", 0, 0, 0, false); err != nil {
 		return err

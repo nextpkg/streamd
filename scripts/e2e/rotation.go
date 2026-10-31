@@ -115,12 +115,8 @@ func (harness *harness) rotationMedia() (result error) {
 	}
 	watch := harness.watchPlayback(players)
 	defer func() { result = errors.Join(result, watch.finish(harness)) }()
-	select {
-	case <-watch.ready:
-	case <-watch.done:
-		return fmt.Errorf("rotation playback warmup: %w", watch.err)
-	case <-harness.ctx.Done():
-		return harness.ctx.Err()
+	if err := watch.waitReady(harness.ctx); err != nil {
+		return fmt.Errorf("rotation playback warmup: %w", err)
 	}
 	if err := harness.until("four held cloud objects per stream and visible bounded wait", 20*time.Second, func() (bool, error) {
 		pending, objects, err := backend.inventory(harness)

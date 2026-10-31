@@ -126,10 +126,8 @@ func (harness *harness) metricsMedia() error {
 	if err := watch.finish(harness); err != nil {
 		return err
 	}
-	for app, child := range publishers {
-		if err := harness.finish("publish-"+app, child, 15*time.Second); err != nil {
-			return err
-		}
+	if err := harness.finishPublishers(publishers, "publish-", 15*time.Second); err != nil {
+		return err
 	}
 	if err := harness.metricSnapshot("retired", "final", false); err != nil {
 		return err

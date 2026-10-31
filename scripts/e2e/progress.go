@@ -155,3 +155,43 @@ func (watch *playbackWatch) finish(harness *harness) error {
 	harness.results["playback_continuity"] = map[string]any{"sampling_seconds": 0.25, "maximum_allowed_gap_seconds": 5, "players": watch.progress, "trace": watch.trace, "passed": watch.err == nil}
 	return watch.err
 }
+
+// waitReady never treats a stopped or cancelled watch as successful warmup.
+func (watch *playbackWatch) waitReady(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-watch.done:
+		return watch.stoppedError()
+	case <-watch.ready:
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		select {
+		case <-watch.done:
+			return watch.stoppedError()
+		default:
+			return nil
+		}
+	}
+}
+
+func (watch *playbackWatch) stoppedError() error {
+	if watch.err != nil {
+		return watch.err
+	}
+	return errors.New("playback watch stopped before readiness was confirmed")
+}
+
+// validateDecodedFrames is independent of processes and files so result rules
+// can be exercised in unit tests without running a media scenario.
+func validateDecodedFrames(progress string, minimumFrames int) (int, error) {
+	frames, err := decodedFrames(progress)
+	if err != nil {
+		return 0, err
+	}
+	if frames < minimumFrames {
+		return frames, fmt.Errorf("decoded %d frames, need at least %d", frames, minimumFrames)
+	}
+	return frames, nil
+}
