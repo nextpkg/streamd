@@ -1,20 +1,16 @@
 package gop
 
 import (
+	"errors"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/nextpkg/streamd/container/flv"
 	"github.com/nextpkg/streamd/packet"
 )
 
-type optimizationCollector struct{ packets []*packet.Packet }
-
-func (collector *optimizationCollector) Write(frame *packet.Packet) error {
-	collector.packets = append(collector.packets, frame)
-	return nil
-}
-
-func TestGOPStartupOrderRetainsSharedPayloads(test *testing.T) {
+func startupCache(test *testing.T) (*Cache, []*packet.Packet) {
+	test.Helper()
 	cache := NewCache(1)
 	frames := []*packet.Packet{
 		{Type: packet.PktMetadata, Data: []byte{1}},
@@ -32,7 +28,12 @@ func TestGOPStartupOrderRetainsSharedPayloads(test *testing.T) {
 			test.Fatal(err)
 		}
 	}
-	first, second := &optimizationCollector{}, &optimizationCollector{}
+	return cache, frames
+}
+
+func TestGOPStartupOrderRetainsSharedPayloads(test *testing.T) {
+	cache, frames := startupCache(test)
+	first, second := &packetCollector{}, &packetCollector{}
 	if err := cache.SendTo(first); err != nil {
 		test.Fatal(err)
 	}
@@ -62,11 +63,39 @@ func TestGOPRingReusesStorageAndRetiresOldGroups(test *testing.T) {
 	if err := cache.Write(third, true); err != nil {
 		test.Fatal(err)
 	}
-	collector := &optimizationCollector{}
+	collector := &packetCollector{}
 	if err := cache.SendTo(collector); err != nil {
 		test.Fatal(err)
 	}
 	if cache.gops[0] != storage || len(collector.packets) != 2 || collector.packets[0] != second || collector.packets[1] != third {
 		test.Fatal("GOP ring allocated replacement storage or retained the wrong groups")
+	}
+}
+
+// A failed viewer must stop receiving immediately without consuming the cache
+// that a subsequent viewer needs to start playback.
+type replayWriter func(*packet.Packet) error
+
+func (write replayWriter) Write(p *packet.Packet) error { return write(p) }
+
+func TestGOPReplayStopsOnViewerFailure(t *testing.T) {
+	for index, name := range []string{"metadata", "video-header", "audio-header", "keyframe", "audio", "inter-frame"} {
+		t.Run(name, func(t *testing.T) {
+			cache, frames := startupCache(t)
+			failure := errors.New("viewer disconnected")
+			var received []*packet.Packet
+			err := cache.SendTo(replayWriter(func(p *packet.Packet) error {
+				received = append(received, p)
+				if len(received) == index+1 {
+					return failure
+				}
+				return nil
+			}))
+			require.ErrorIs(t, err, failure)
+			require.Equal(t, frames[:index+1], received)
+			next := &packetCollector{}
+			require.NoError(t, cache.SendTo(next))
+			require.Equal(t, frames, next.packets)
+		})
 	}
 }
