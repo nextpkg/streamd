@@ -177,6 +177,8 @@ func TestAdminQueryConcurrentCloseAndAdmission(test *testing.T) {
 	admin := NewServer(connection)
 	server := httptest.NewServer(admin.Init(http.NewServeMux()))
 	defer server.Close()
+	defer admin.Close()
+	server.Client().Timeout = 2 * time.Second
 	var workers sync.WaitGroup
 	started := make(chan struct{})
 	for range 32 {
@@ -187,12 +189,20 @@ func TestAdminQueryConcurrentCloseAndAdmission(test *testing.T) {
 			for range 3 {
 				response, err := server.Client().Get(server.URL + "/admin/stat/keys")
 				if err != nil {
+					// Close cancels accepted requests by expiring their I/O deadlines.
+					if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+						continue
+					}
 					test.Error(err)
 					return
 				}
 				_, err = io.Copy(io.Discard, response.Body)
 				_ = response.Body.Close()
 				if err != nil {
+					// Close cancels accepted requests by expiring their I/O deadlines.
+					if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+						continue
+					}
 					test.Error(err)
 					return
 				}
@@ -209,6 +219,17 @@ func TestAdminQueryConcurrentCloseAndAdmission(test *testing.T) {
 	close(started)
 	workers.Wait()
 	admin.Close()
+	response, err := server.Client().Get(server.URL + "/admin/stat/keys")
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer func() { _ = response.Body.Close() }()
+	if _, err := io.Copy(io.Discard, response.Body); err != nil {
+		test.Fatal(err)
+	}
+	if response.StatusCode != http.StatusServiceUnavailable {
+		test.Fatalf("query after close: status %d", response.StatusCode)
+	}
 }
 
 func TestAdminCloseJoinsAllAcceptedQueriesAndRejectsLateAdmission(test *testing.T) {
