@@ -18,8 +18,6 @@ import (
 
 // Conn 管理RTMP流
 type Conn struct {
-	currentConfig func() *config.Config // Latest snapshot at each admission/reload boundary.
-
 	ctx        context.Context
 	cancel     context.CancelFunc
 	checkin    atomic.Int64
@@ -33,7 +31,7 @@ type Conn struct {
 	background sync.WaitGroup
 	origins    sync.Map
 	players    []EmbedWriter
-	pull       func(context.Context, *base.Info, string, time.Duration, core.ClientOptions) (base.ReadCloser, error)
+	pull       func(context.Context, *base.Info, string, time.Duration) (base.ReadCloser, error)
 }
 
 func (conn *Conn) keyLock(key string) *sync.Mutex {
@@ -44,20 +42,13 @@ func (conn *Conn) keyLock(key string) *sync.Mutex {
 
 // NewConn 管理RTMP流
 func NewConn(ctx context.Context) *Conn {
-	return newConn(ctx, config.Get)
-}
-
-func newConn(ctx context.Context, currentConfig func() *config.Config) *Conn {
 	ctx, cancel := context.WithCancel(ctx)
 	ret := &Conn{
-		ctx: ctx, cancel: cancel, pull: pullOrigin, currentConfig: currentConfig,
+		ctx: ctx, cancel: cancel, pull: pullOrigin,
 	}
 
 	ret.background.Add(2)
-	go func() {
-		defer ret.background.Done()
-		ret.cleanStream(time.Duration(ret.currentConfig().RTMP.EdgeCheck) * time.Second)
-	}()
+	go func() { defer ret.background.Done(); ret.cleanStream() }()
 	go func() { defer ret.background.Done(); ret.cleanSource() }()
 
 	return ret
@@ -151,7 +142,7 @@ func (c *Conn) WriterActive(key string) (int64, int64) {
 // 定期淘汰源站
 func (c *Conn) cleanSource() {
 	for {
-		finder := &c.currentConfig().Finder
+		finder := config.GetFinder()
 		expire := finder.Expire * time.Second
 
 		select {
@@ -175,9 +166,9 @@ func (c *Conn) cleanSource() {
 }
 
 // 如果stream没有活跃的读写连接, 则移除stream
-// The sweep interval is fixed when the worker starts; source expiry is re-read each cycle.
-func (c *Conn) cleanStream(interval time.Duration) {
-	ticker := time.NewTicker(interval)
+func (c *Conn) cleanStream() {
+	interval := time.Duration(config.Get().RTMP.EdgeCheck)
+	ticker := time.NewTicker(interval * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -219,7 +210,7 @@ func (c *Conn) cleanStream(interval time.Duration) {
 
 // 填充源站列表，有源站可用则返回true，否则返回false
 func (c *Conn) find(ds *sourceCache, info *base.Info) bool {
-	return c.findWithConfig(ds, info, c.currentConfig())
+	return c.findWithConfig(ds, info, config.Get())
 }
 
 func discoveredRTMPURL(app, instance, advertisement string) (string, error) {
@@ -293,7 +284,7 @@ func (c *Conn) InstallReader(r base.ReadCloser) {
 		r.Close()
 		return
 	}
-	cfg := c.currentConfig()
+	cfg := config.Get()
 	app := cfg.GetApp(r.Info().App)
 	if app == nil {
 		r.Close()
@@ -421,7 +412,7 @@ func (c *Conn) StartRTMP(w ...EmbedWriter) (net.Listener, error) {
 	if c.closed.Load() {
 		return nil, net.ErrClosed
 	}
-	cfg := c.currentConfig().RTMP
+	cfg := config.Get().RTMP
 
 	l, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {
@@ -430,7 +421,7 @@ func (c *Conn) StartRTMP(w ...EmbedWriter) (net.Listener, error) {
 
 	log.Info("Rtmp [tcp] Listening on ", cfg.Addr)
 
-	rtmpSrv := newRtmpServer(c, c.currentConfig, w...)
+	rtmpSrv := NewRtmpServer(c, w...)
 	c.servers = append(c.servers, rtmpSrv)
 	c.players = append([]EmbedWriter(nil), w...)
 	c.background.Add(1)

@@ -14,8 +14,6 @@ import (
 
 // Server RTMP服务
 type Server struct {
-	currentConfig func() *config.Config
-
 	handler   Handler
 	players   []EmbedWriter
 	mutex     sync.Mutex
@@ -28,14 +26,9 @@ type Server struct {
 
 // NewRtmpServer RTMP服务
 func NewRtmpServer(h Handler, w ...EmbedWriter) *Server {
-	return newRtmpServer(h, config.Get, w...)
-}
-
-func newRtmpServer(h Handler, currentConfig func() *config.Config, w ...EmbedWriter) *Server {
 	return &Server{
-		handler:       h,
-		currentConfig: currentConfig,
-		players:       w,
+		handler: h,
+		players: w,
 	}
 }
 
@@ -77,8 +70,7 @@ func (s *Server) Serve(listener net.Listener) {
 		s.pending[netConn] = struct{}{}
 		s.workers.Add(1)
 		s.mutex.Unlock()
-		// Transport settings belong to this accepted connection, even across reloads.
-		settings := s.currentConfig().RTMP
+		settings := config.Get().RTMP
 		go func() {
 			defer func() {
 				s.mutex.Lock()
@@ -158,8 +150,8 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 		return
 	}
 
-	// Application admission uses the latest snapshot after negotiation.
-	app := s.currentConfig().GetApp(server.GetConnect().App)
+	// 过滤APP
+	app := config.Get().GetApp(server.GetConnect().App)
 	if app == nil {
 		log.Infof("application is not configured,app='%s'", server.GetConnect().App)
 		return
