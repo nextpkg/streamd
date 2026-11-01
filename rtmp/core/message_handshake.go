@@ -73,7 +73,7 @@ func (c *Conn) read(data []byte) error {
 
 func (c *Conn) resetTimer() {
 	// reset deadline for client handshake
-	err := c.Conn.SetDeadline(time.Time{})
+	err := c.SetDeadline(time.Time{})
 	if err != nil && !errors.Is(err, net.ErrClosed) {
 		log.Error(errors.Wrap(err, "reset connection timer failed"))
 	}
@@ -82,7 +82,7 @@ func (c *Conn) resetTimer() {
 // HandshakeClient 客户端发起握手, 只支持简单握手
 func (c *Conn) HandshakeClient() error {
 
-	err := c.Conn.SetDeadline(time.Now().Add(handshakeTimeout))
+	err := c.SetDeadline(time.Now().Add(handshakeTimeout))
 	if err != nil {
 		return errors.Wrap(err, "set deadline failed")
 	}
@@ -139,7 +139,7 @@ func (c *Conn) HandshakeClient() error {
 // HandshakeServer 服务端响应握手, 支持复杂握手和简单握手
 func (c *Conn) HandshakeServer() error {
 
-	err := c.Conn.SetDeadline(time.Now().Add(handshakeTimeout))
+	err := c.SetDeadline(time.Now().Add(handshakeTimeout))
 	if err != nil {
 		return errors.Wrap(err, "set deadline")
 	}

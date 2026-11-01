@@ -206,7 +206,7 @@ func TestHLSHealthyResponsesKeepConnectionReusable(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer connection.Close()
+	defer func() { _ = connection.Close() }()
 	reader := bufio.NewReader(connection)
 	for index := 0; index < 8; index++ {
 		if err := connection.SetDeadline(time.Now().Add(time.Second)); err != nil {

@@ -17,9 +17,9 @@ func AntiLeechSign(key, secret string, expire int64) string {
 	md5Sum := md5.Sum([]byte(fmt.Sprintf("%s %s %d", key, secret, expire)))
 
 	sign := base64.StdEncoding.EncodeToString(md5Sum[:])
-	sign = strings.Replace(sign, "+", "-", -1)
-	sign = strings.Replace(sign, "/", "_", -1)
-	sign = strings.Replace(sign, "=", "", -1)
+	sign = strings.ReplaceAll(sign, "+", "-")
+	sign = strings.ReplaceAll(sign, "/", "_")
+	sign = strings.ReplaceAll(sign, "=", "")
 
 	return sign
 }

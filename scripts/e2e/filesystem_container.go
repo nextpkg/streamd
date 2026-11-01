@@ -78,7 +78,7 @@ func (harness *harness) startFilesystemContainerWithLimits(faultBytes, healthyBy
 		build.Dir = harness.root
 		build.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS=linux", "GOARCH="+architecture)
 		if body, err := build.CombinedOutput(); err != nil {
-			return container, fmt.Errorf("Linux %s build: %w: %s", target.source, err, body)
+			return container, fmt.Errorf("linux %s build: %w: %s", target.source, err, body)
 		}
 	}
 	if _, err := runner.command(ctx, "image", "inspect", filesystemImage); err != nil {

@@ -77,12 +77,12 @@ func (recorder *AppRecorder) prepare(ctx context.Context, previous *AppRecorder,
 	switch recorder.Driver {
 	case DriverCos:
 		recorder.cc, err = objectstore.NewCOS(recorder.CosCfg)
-		if err == nil && !(previous != nil && previous.Enable && previous.Driver == DriverCos && previous.cc != nil && previous.CosCfg != nil && *previous.CosCfg == *recorder.CosCfg) {
+		if err == nil && (previous == nil || !previous.Enable || previous.Driver != DriverCos || previous.cc == nil || previous.CosCfg == nil || *previous.CosCfg != *recorder.CosCfg) {
 			err = recorder.cc.Preflight(ctx, path.Join(recorder.CosCfg.Path, app))
 		}
 	case DriverAws:
 		recorder.ac, err = objectstore.NewS3(recorder.AwsCfg)
-		if err == nil && !(previous != nil && previous.Enable && previous.Driver == DriverAws && previous.ac != nil && previous.AwsCfg != nil && *previous.AwsCfg == *recorder.AwsCfg) {
+		if err == nil && (previous == nil || !previous.Enable || previous.Driver != DriverAws || previous.ac == nil || previous.AwsCfg == nil || *previous.AwsCfg != *recorder.AwsCfg) {
 			err = recorder.ac.Preflight(ctx, path.Join(recorder.AwsCfg.Path, app))
 		}
 	case "", DriverFs:

@@ -83,12 +83,12 @@ func localAddresses() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	defer first.Close()
+	defer func() { _ = first.Close() }()
 	second, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", "", err
 	}
-	defer second.Close()
+	defer func() { _ = second.Close() }()
 	return first.Addr().String(), second.Addr().String(), nil
 }
 
@@ -174,7 +174,7 @@ func measureSlab(ctx context.Context, settings options, directory string, thresh
 	if err != nil {
 		return result, err
 	}
-	defer logFile.Close()
+	defer func() { _ = logFile.Close() }()
 	counts, err := slabCounts(logFile)
 	result.Max, result.Medium, result.Min = counts[0], counts[1], counts[2]
 	return result, err
@@ -207,7 +207,9 @@ func waitSlabClose(ctx context.Context, server *child, filename string) error {
 
 func scanSlabs(ctx context.Context, settings options, directory string, output io.Writer) ([]slabResult, error) {
 	var results []slabResult
-	fmt.Fprintln(output, "minimum_KiB\tmaximum_KiB\tMax\tMedium\tMin")
+	if _, err := fmt.Fprintln(output, "minimum_KiB\tmaximum_KiB\tMax\tMedium\tMin"); err != nil {
+		return results, err
+	}
 	for threshold := settings.minimum; threshold <= settings.maximum; {
 		if err := ctx.Err(); err != nil {
 			return results, err
@@ -217,7 +219,9 @@ func scanSlabs(ctx context.Context, settings options, directory string, output i
 		if err != nil {
 			return results, err
 		}
-		fmt.Fprintf(output, "%d\t%d\t%d\t%d\t%d\n", result.Threshold, result.Block, result.Max, result.Medium, result.Min)
+		if _, err := fmt.Fprintf(output, "%d\t%d\t%d\t%d\t%d\n", result.Threshold, result.Block, result.Max, result.Medium, result.Min); err != nil {
+			return results, err
+		}
 		if settings.maximum-threshold < settings.step {
 			break
 		}

@@ -8,14 +8,6 @@ import (
 	"github.com/nextpkg/streamd/packet"
 )
 
-// Tag Header
-type flvTag struct {
-	fType     uint8
-	dataSize  uint32
-	timeStamp uint32
-	streamID  uint32 // always 0
-}
-
 // Tag Data
 type mediaTag struct {
 	/*
@@ -107,7 +99,6 @@ type mediaTag struct {
 
 // Tag Flv Body
 type Tag struct {
-	flv   flvTag
 	media mediaTag
 }
 

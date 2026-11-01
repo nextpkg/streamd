@@ -14,16 +14,16 @@ import (
 func (s *ConnServer) handlePublish(args []interface{}) error {
 
 	for k, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
-			s.transactionID = uint32(v.(float64))
+			s.transactionID = uint32(v)
 		case amf.Object:
 		case string:
 			switch k {
 			case 2:
 
 				// 发布流的名称
-				s.publish.Name = v.(string)
+				s.publish.Name = v
 				log.Trace("publish name is ", s.publish.Name)
 			case 3:
 				/**
@@ -32,9 +32,9 @@ func (s *ConnServer) handlePublish(args []interface{}) error {
 				record: 发布流并且数据被录制在一个新文件中。这个文件被存储在服务器应用程序的子目录中, 如果文件已经存在, 那么它将会被覆盖
 				append: 发布流并且数据被追加在文件的后面，如果文件不存在，它将会被创建
 				*/
-				switch v.(string) {
+				switch v {
 				case publishLive, publishRecord, publishAppend:
-					s.publish.Type = v.(string)
+					s.publish.Type = v
 				default:
 					return errors.New("invalid publish type")
 				}
@@ -50,15 +50,15 @@ func (s *ConnServer) handlePublish(args []interface{}) error {
 func (s *ConnServer) handlePlay(args []interface{}) error {
 
 	for k, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
 			switch k {
 			case 0:
 				// 事务的 ID 设置为 0
-				s.transactionID = uint32(v.(float64))
+				s.transactionID = uint32(v)
 			case 3:
 				// start: 一个可选的参数,它指定了起始的时间以秒为单位
-				start := int(v.(float64))
+				start := int(v)
 
 				switch {
 				case start <= -2:
@@ -81,7 +81,7 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 				}
 			case 4:
 				// duration: 一个可选的参数，它指定了回放的持续时间以秒为单位
-				duration := int(v.(float64))
+				duration := int(v)
 
 				switch {
 				case duration <= -1:
@@ -104,7 +104,7 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 		case amf.Object:
 		case string:
 			// 需要播放的流的名字
-			s.publish.Name = v.(string)
+			s.publish.Name = v
 		case bool:
 			// 一个可选的布尔值或布尔数字，指定示是否刷新之前的播放列表
 			log.Tracef("unrealized play:reset")
@@ -119,13 +119,12 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 func (s *ConnServer) handleGetStreamLength(args []interface{}) error {
 
 	for _, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
-			s.transactionID = uint32(v.(float64))
+			s.transactionID = uint32(v)
 		case string:
 
 			// 未实现：通过发布流名称获取流的长度，RTMP如需支持历史视频，此处应实现按流的名字查找历史视频长度
-			_ = v.(string)
 			s.duration = 0
 		}
 	}
@@ -139,9 +138,9 @@ func (s *ConnServer) handleGetStreamLength(args []interface{}) error {
 func (s *ConnServer) handleCreateStream(args []interface{}) error {
 
 	for _, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
-			s.transactionID = uint32(v.(float64))
+			s.transactionID = uint32(v)
 		case amf.Object:
 
 			// 【可以不实现】这里的命令对象由客户端自定义
@@ -223,11 +222,11 @@ func (s *ConnServer) connectCommandMsg(v interface{}) {
 func (s *ConnServer) handleConnect(args []interface{}) error {
 
 	for k, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
 
 			// 事务ID
-			id := int(v.(float64))
+			id := int(v)
 			if id != 1 {
 				return fmt.Errorf("invalid transaction ID=%d", id)
 			}
@@ -255,12 +254,12 @@ func (s *ConnServer) handleConnect(args []interface{}) error {
 func (s *ConnServer) handleFcunpublish(args []interface{}) error {
 
 	for _, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
-			s.transactionID = uint32(v.(float64))
+			s.transactionID = uint32(v)
 		case amf.Object:
 		case string:
-			publishName := v.(string)
+			publishName := v
 			if publishName != s.publish.Name {
 				return fmt.Errorf("invalid publish name=%s", publishName)
 			}
@@ -275,9 +274,9 @@ func (s *ConnServer) handleFcunpublish(args []interface{}) error {
 func (s *ConnServer) handleDeleteStream(args []interface{}) error {
 
 	for k, v := range args {
-		switch v.(type) {
+		switch v := v.(type) {
 		case float64:
-			num := uint32(v.(float64))
+			num := uint32(v)
 
 			switch k {
 			case 0:

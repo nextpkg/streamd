@@ -59,8 +59,8 @@ func TestOrdinaryRotationDoesNotWaitOrReportPrematureCompletion(test *testing.T)
 				}
 			case <-time.After(200 * time.Millisecond):
 				unlock()
-				<-returned
-				test.Fatal("ordinary segment rotation waits for cloud finalization")
+				err := <-returned
+				test.Fatalf("ordinary segment rotation waits for cloud finalization: %v", err)
 			}
 			select {
 			case complete := <-driver.started:
@@ -79,8 +79,8 @@ func TestOrdinaryRotationDoesNotWaitOrReportPrematureCompletion(test *testing.T)
 			joined := make(chan error, 1)
 			go func() { joined <- store.Close(true) }()
 			select {
-			case <-joined:
-				test.Fatal("blocking close did not join the previous segment")
+			case err := <-joined:
+				test.Fatalf("blocking close did not join the previous segment: %v", err)
 			case <-time.After(20 * time.Millisecond):
 			}
 			unlock()

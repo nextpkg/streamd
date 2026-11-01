@@ -61,7 +61,7 @@ func TestCompletionRetryEvidenceRequiresStableUploadAndManifest(test *testing.T)
 			if err != nil {
 				test.Fatal(err)
 			}
-			response.Body.Close()
+			_ = response.Body.Close()
 			if err := fault.Arm([]string{"key"}); err != nil {
 				test.Fatal(err)
 			}
@@ -75,7 +75,7 @@ func TestCompletionRetryEvidenceRequiresStableUploadAndManifest(test *testing.T)
 				}
 				response, err := client.Post(fault.URL+"/key?uploadId="+identity, "application/xml", strings.NewReader(manifest))
 				if err == nil {
-					response.Body.Close()
+					_ = response.Body.Close()
 					test.Fatal("post-completion response was not dropped")
 				}
 			}

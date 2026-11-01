@@ -148,7 +148,7 @@ func (harness *harness) fragmentClock() error {
 		return err
 	}
 	watch := harness.watchPlayback(players)
-	defer watch.finish(harness)
+	defer func() { _ = watch.finish(harness) }() // Cleanup on early failure; success is checked below.
 	seen := map[string]map[string]bool{"flv": {}, "ts": {}}
 	ended := map[string]bool{}
 	if err := harness.until("all HLS tails captured", 70*time.Second, func() (bool, error) {

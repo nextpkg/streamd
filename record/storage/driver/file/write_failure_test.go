@@ -42,7 +42,7 @@ func TestFailedAppendRollsBackAndRejectsFurtherWrites(t *testing.T) {
 	require.NoError(t, writer.Write([]byte("confirmed")))
 	file := &failingFile{File: writer.fd.(*os.File), limit: 2, failure: syscall.ENOSPC}
 	writer.fd = file
-	defer file.File.Close()
+	defer func() { _ = file.Close() }()
 	require.ErrorIs(t, writer.Write([]byte("partial")), syscall.ENOSPC)
 	body, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestFailedEmptyRecordingRemovesOnlyNewOwnedFiles(t *testing.T) {
 		require.NoError(t, writer.Open())
 		file := &failingFile{File: writer.fd.(*os.File), failure: syscall.ENOSPC}
 		writer.fd = file
-		defer file.File.Close()
+		defer func() { _ = file.Close() }()
 		require.ErrorIs(t, writer.Write([]byte("media")), syscall.ENOSPC)
 		require.ErrorIs(t, writer.Close(true, true), syscall.ENOSPC)
 		_, err := os.Stat(path)
@@ -80,7 +80,7 @@ func TestFailedEmptyRecordingPreservesReplacementPath(t *testing.T) {
 	require.NoError(t, writer.Open())
 	file := &failingFile{File: writer.fd.(*os.File), failure: syscall.ENOSPC}
 	writer.fd = file
-	defer file.File.Close()
+	defer func() { _ = file.Close() }()
 	require.ErrorIs(t, writer.Write([]byte("media")), syscall.ENOSPC)
 	require.NoError(t, os.Rename(path, path+".original"))
 	require.NoError(t, os.WriteFile(path, []byte("replacement"), 0600))
@@ -96,7 +96,7 @@ func TestFailedRollbackRemainsObservable(t *testing.T) {
 	require.NoError(t, writer.Open())
 	file := &failingFile{File: writer.fd.(*os.File), limit: 2, failure: syscall.ENOSPC, rollbackError: io.ErrUnexpectedEOF}
 	writer.fd = file
-	defer file.File.Close()
+	defer func() { _ = file.Close() }()
 	err := writer.Write([]byte("partial"))
 	require.ErrorIs(t, err, syscall.ENOSPC)
 	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
@@ -113,7 +113,7 @@ func TestShortFileWriteWithoutErrorIsNotAccepted(t *testing.T) {
 	require.NoError(t, writer.Write([]byte("prefix")))
 	file := &failingFile{File: writer.fd.(*os.File), limit: 2}
 	writer.fd = file
-	defer file.File.Close()
+	defer func() { _ = file.Close() }()
 	require.ErrorIs(t, writer.Write([]byte("partial")), io.ErrShortWrite)
 	body, err := os.ReadFile(path)
 	require.NoError(t, err)

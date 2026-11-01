@@ -27,7 +27,7 @@ func TestInspectionBarrierDoesNotMaskClientCancellation(test *testing.T) {
 	go func() {
 		response, err := http.DefaultClient.Do(request)
 		if response != nil {
-			response.Body.Close()
+			_ = response.Body.Close()
 		}
 		done <- err
 	}()

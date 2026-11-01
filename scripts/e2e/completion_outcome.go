@@ -416,7 +416,7 @@ func (harness *harness) completionObjects(reader *s3.Client, contract *teststore
 				return nil, err
 			}
 			if response.StatusCode != http.StatusOK {
-				response.Body.Close()
+				_ = response.Body.Close()
 				return nil, errors.New("COS outcome object unavailable")
 			}
 			body = response.Body

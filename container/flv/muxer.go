@@ -44,7 +44,7 @@ func (m *muxer) header(mt ...int) ([]byte, error) {
 		case packet.PktAudio:
 			m.flvHdr[4] |= 0x04
 		default:
-			return nil, fmt.Errorf("unexpected media type number='%d'\n", v)
+			return nil, fmt.Errorf("unexpected media type number='%d'", v)
 		}
 	}
 

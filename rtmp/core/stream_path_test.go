@@ -45,7 +45,7 @@ func TestRTMPPreservesLiteralStreamNames(test *testing.T) {
 				if err != nil {
 					test.Fatal(err)
 				}
-				defer listener.Close()
+				defer func() { _ = listener.Close() }()
 				completed := make(chan error, 1)
 				go func() {
 					transport, err := listener.Accept()
@@ -53,7 +53,7 @@ func TestRTMPPreservesLiteralStreamNames(test *testing.T) {
 						completed <- err
 						return
 					}
-					defer transport.Close()
+					defer func() { _ = transport.Close() }()
 					_ = transport.SetDeadline(time.Now().Add(2 * time.Second))
 					protocol := NewConn(transport, ConnBufSize)
 					if err := protocol.HandshakeServer(); err != nil {
@@ -73,10 +73,10 @@ func TestRTMPPreservesLiteralStreamNames(test *testing.T) {
 				transport, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
 				if err != nil {
 					_ = listener.Close()
-					<-completed
-					test.Fatal(err)
+					serverErr := <-completed
+					test.Fatalf("dial failed: %v; server: %v", err, serverErr)
 				}
-				defer transport.Close()
+				defer func() { _ = transport.Close() }()
 				_ = transport.SetDeadline(time.Now().Add(2 * time.Second))
 				client := NewConnClient("直播", name, NewConn(transport, ConnBufSize))
 				if err := client.Start(method); err != nil {
@@ -92,8 +92,8 @@ func TestRTMPPreservesLiteralStreamNames(test *testing.T) {
 
 func TestPlayNameComesFromStreamArgument(test *testing.T) {
 	serverSide, clientSide := net.Pipe()
-	defer serverSide.Close()
-	defer clientSide.Close()
+	defer func() { _ = serverSide.Close() }()
+	defer func() { _ = clientSide.Close() }()
 	_ = serverSide.SetDeadline(time.Now().Add(time.Second))
 	done := make(chan struct{})
 	go func() { defer close(done); _, _ = io.Copy(io.Discard, clientSide) }()

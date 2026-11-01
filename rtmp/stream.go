@@ -117,11 +117,7 @@ func (s *Stream) HasReader() bool {
 	s.RLock()
 	defer s.RUnlock()
 
-	if s.rConn == nil {
-		return false
-	}
-
-	return true
+	return s.rConn != nil
 }
 
 // 启动收集/派发流程（由上层业务决定是否加入stream）
@@ -404,7 +400,6 @@ func (s *Stream) dispatch(p *packet.Packet) {
 				case core.ErrWriterWasCanceled:
 					s.removeWriter(w, key, true)
 					log.Debugf(msg, arg...)
-					break
 				case core.ErrQueueSaturated:
 					if info.IsExternal {
 						s.removeWriter(w, key, true)
@@ -412,7 +407,6 @@ func (s *Stream) dispatch(p *packet.Packet) {
 					fallthrough
 				default:
 					log.Errorf(msg, arg...)
-					break
 				}
 			}
 
@@ -519,10 +513,7 @@ func (s *Stream) health() bool {
 	now := observed.Unix()
 	overtime := config.Get().RTMP.EdgeAlive
 	if conn == nil {
-		if now-s.active.time <= overtime {
-			return true
-		}
-		return false
+		return now-s.active.time <= overtime
 	}
 
 	if conn.IsTimeout() {

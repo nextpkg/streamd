@@ -165,7 +165,7 @@ func (harness *harness) jointLifecycle() (result error) {
 	peers := []net.Conn{}
 	defer func() {
 		for _, peer := range peers {
-			peer.Close()
+			_ = peer.Close()
 		}
 	}()
 	for index := 0; index < 4; index++ {

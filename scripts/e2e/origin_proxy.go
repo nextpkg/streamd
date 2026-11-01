@@ -68,7 +68,7 @@ func (proxy *originProxy) forward(downstream net.Conn) {
 	defer proxy.workers.Done()
 	defer proxy.active.Add(-1)
 	defer proxy.connections.Delete(downstream)
-	defer downstream.Close()
+	defer func() { _ = downstream.Close() }()
 	switch proxy.fault.Load() {
 	case originProxyReject:
 		return
@@ -86,7 +86,7 @@ func (proxy *originProxy) forward(downstream net.Conn) {
 	if err != nil {
 		return
 	}
-	defer upstream.Close()
+	defer func() { _ = upstream.Close() }()
 	proxy.upstreamPeers.Store(upstream.LocalAddr().String(), true)
 	stop := context.AfterFunc(proxy.ctx, func() { _ = upstream.Close(); _ = downstream.Close() })
 	defer stop()

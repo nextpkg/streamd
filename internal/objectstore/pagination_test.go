@@ -151,7 +151,7 @@ func TestObjectListingRejectsMissingAndCyclicMarkers(test *testing.T) {
 						index := int(requests.Add(1)) - 1
 						if index >= len(scenario.markers) {
 							writer.WriteHeader(http.StatusForbidden)
-							fmt.Fprint(writer, "<Error><Code>AccessDenied</Code></Error>")
+							_, _ = fmt.Fprint(writer, "<Error><Code>AccessDenied</Code></Error>") // The HTTP client validates the response; disconnects need no retry.
 							return
 						}
 						marker := scenario.markers[index]
@@ -190,7 +190,7 @@ func TestObjectListingDiscardsPartialResultsOnErrorOrCancellation(test *testing.
 							return
 						}
 						writer.WriteHeader(http.StatusForbidden)
-						fmt.Fprint(writer, "<Error><Code>AccessDenied</Code></Error>")
+						_, _ = fmt.Fprint(writer, "<Error><Code>AccessDenied</Code></Error>") // The HTTP client validates the response; disconnects need no retry.
 					}))
 					defer server.Close()
 					client := listingClient(test, provider, server.URL)

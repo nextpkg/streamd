@@ -136,11 +136,12 @@ func TestProxySignatureRejectsBeforeUpstreamOrCallback(test *testing.T) {
 			token := config.AntiLeechSign("live/"+instance, "test-secret", expiration)
 			query := fmt.Sprintf("?e=%d&token=%s", expiration, token)
 			expected := http.StatusForbidden
-			if offset == 0 {
+			switch offset {
+			case 0:
 				query = ""
-			} else if offset == -5 {
+			case -5:
 				expected = http.StatusGone
-			} else if offset == 30 {
+			case 30:
 				expected = http.StatusOK
 				if instance == "absent" {
 					expected = http.StatusNotFound
@@ -307,7 +308,7 @@ func TestProxySlowDownstreamRetiresWithoutResumingReads(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer transport.Close()
+	defer func() { _ = transport.Close() }()
 	connection := transport.(*net.TCPConn)
 	if err := connection.SetReadBuffer(1024); err != nil {
 		test.Fatal(err)
@@ -356,7 +357,7 @@ func TestProxyHealthyStreamingRenewsDeadlinesAndReusesConnection(test *testing.T
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer connection.Close()
+	defer func() { _ = connection.Close() }()
 	reader := bufio.NewReader(connection)
 	for index := 0; index < 4; index++ {
 		_ = connection.SetDeadline(time.Now().Add(time.Second))
@@ -487,7 +488,7 @@ func TestProxyCloseReleasesIncompleteIncomingRequestBody(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer connection.Close()
+	defer func() { _ = connection.Close() }()
 	_, err = io.WriteString(connection, "GET /edge/hfs/live/sample.flv HTTP/1.1\r\nHost: media\r\nContent-Length: 1048576\r\n\r\nx")
 	if err != nil {
 		test.Fatal(err)

@@ -75,7 +75,7 @@ func TestFailedObjectOpenStillSchedulesIndependentMaintenance(test *testing.T) {
 	client := &objectstore.Client{Backend: &failedOpenBackend{}}
 	defer client.Close()
 	writer := driver.NewObject(client, "failed/2000000000.ts", 900, true)
-	defer writer.Close(true, true)
+	defer func() { _ = writer.Close(true, true) }()
 	if err := writer.Open(); err == nil {
 		test.Fatal("current object unexpectedly opened")
 	}

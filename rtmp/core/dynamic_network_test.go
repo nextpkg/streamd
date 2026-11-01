@@ -31,7 +31,7 @@ func relayPeer(test *testing.T) (string, <-chan error) {
 			go func() {
 				defer workers.Done()
 				defer connections.Delete(connection)
-				defer connection.Close()
+				defer func() { _ = connection.Close() }()
 				_ = connection.SetDeadline(time.Now().Add(3 * time.Second))
 				protocol := NewConn(connection, ConnBufSize)
 				server := NewConnServer(protocol, 4096)

@@ -15,7 +15,7 @@ func TestOriginProxyBlocksUntilReleased(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	accepted := make(chan struct{})
 	finished := make(chan struct{})
 	go func() {
@@ -24,7 +24,7 @@ func TestOriginProxyBlocksUntilReleased(test *testing.T) {
 		if err != nil {
 			return
 		}
-		defer connection.Close()
+		defer func() { _ = connection.Close() }()
 		close(accepted)
 		_, _ = io.Copy(connection, connection)
 	}()
@@ -37,7 +37,7 @@ func TestOriginProxyBlocksUntilReleased(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer connection.Close()
+	defer func() { _ = connection.Close() }()
 	if _, err := connection.Write([]byte("origin-payload")); err != nil {
 		test.Fatal(err)
 	}

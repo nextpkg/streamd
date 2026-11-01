@@ -69,5 +69,5 @@ func (s *Server) handleConn(w http.ResponseWriter, r *http.Request) {
 	s.handler.InstallWriter(stream)
 
 	stream.Wait()
-	return
+
 }

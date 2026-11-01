@@ -157,7 +157,7 @@ func (server *Server) relay(response http.ResponseWriter, request *http.Request)
 				}
 				return
 			}
-			defer result.Body.Close()
+			defer func() { _ = result.Body.Close() }()
 			if _, err := io.Copy(response, io.LimitReader(result.Body, 1024*1024)); err != nil && request.Context().Err() == nil {
 				log.Error("proxy callback body: ", err)
 			}

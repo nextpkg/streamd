@@ -41,7 +41,7 @@ func TestStabilityProgressReadsOnlyCompleteAppendedFrames(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	for _, step := range []struct {
 		body   string
 		frames int

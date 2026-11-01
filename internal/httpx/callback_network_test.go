@@ -19,7 +19,7 @@ func TestCallbackActualConnectionRefusalAndReset(test *testing.T) {
 			if err != nil {
 				test.Fatal(err)
 			}
-			defer listener.Close()
+			defer func() { _ = listener.Close() }()
 			address := listener.Addr().String()
 			serverDone := make(chan error, 1)
 			expected := error(syscall.ECONNREFUSED)
@@ -35,7 +35,7 @@ func TestCallbackActualConnectionRefusalAndReset(test *testing.T) {
 						serverDone <- err
 						return
 					}
-					defer connection.Close()
+					defer func() { _ = connection.Close() }()
 					_ = connection.SetDeadline(time.Now().Add(2 * time.Second))
 					request, err := http.ReadRequest(bufio.NewReader(connection))
 					if err == nil {

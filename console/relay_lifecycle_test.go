@@ -50,7 +50,7 @@ func TestConsoleCloseRetiresPartialRelayBody(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer func() { connection.Close(); <-finished; admin.Close() }()
+	defer func() { _ = connection.Close(); <-finished; admin.Close() }()
 	if _, err := fmt.Fprintf(connection, "POST /admin/relay/start HTTP/1.1\r\nHost: local\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 1000\r\n\r\npull="); err != nil {
 		test.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestRelayStartupRespondsToRequestAndConsoleCancellation(test *testing.T) {
 			if err != nil {
 				test.Fatal(err)
 			}
-			defer listener.Close()
+			defer func() { _ = listener.Close() }()
 			accepted := make(chan net.Conn, 1)
 			go func() {
 				connection, err := listener.Accept()
@@ -104,8 +104,10 @@ func TestRelayStartupRespondsToRequestAndConsoleCancellation(test *testing.T) {
 				cancel()
 				test.Fatal("relay did not dial")
 			}
-			defer func() { peer.Close(); cancel(); <-finished; admin.Close() }()
-			peer.SetReadDeadline(time.Now().Add(time.Second))
+			defer func() { _ = peer.Close(); cancel(); <-finished; admin.Close() }()
+			if err := peer.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+				test.Fatal(err)
+			}
 			if _, err := io.ReadFull(peer, make([]byte, 1537)); err != nil {
 				test.Fatal(err)
 			}
@@ -150,7 +152,7 @@ func TestRelayDNSUsesRequestAndOwnerCancellation(test *testing.T) {
 					once.Do(func() { close(queried) })
 				}
 			}()
-			defer func() { sink.Close(); <-drained }()
+			defer func() { _ = sink.Close(); <-drained }()
 			resolver := &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
 				return (&net.Dialer{}).DialContext(ctx, "udp", sink.LocalAddr().String())
 			}}
@@ -242,14 +244,18 @@ func TestClosedConsoleRejectsPartialRelayPostWithoutDraining(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer connection.Close()
-	connection.SetDeadline(time.Now().Add(time.Second))
-	fmt.Fprintf(connection, "POST /admin/relay/start HTTP/1.1\r\nHost: local\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 1000\r\n\r\npull=")
+	defer func() { _ = connection.Close() }()
+	if err := connection.SetDeadline(time.Now().Add(time.Second)); err != nil {
+		test.Fatal(err)
+	}
+	if _, err := fmt.Fprintf(connection, "POST /admin/relay/start HTTP/1.1\r\nHost: local\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 1000\r\n\r\npull="); err != nil {
+		test.Fatal(err)
+	}
 	response, err := http.ReadResponse(bufio.NewReader(connection), nil)
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusServiceUnavailable {
 		test.Fatalf("status=%d", response.StatusCode)
 	}

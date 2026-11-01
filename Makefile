@@ -61,3 +61,7 @@ e2e-inspection-retry: fixtures
 .PHONY: verify
 verify: test check
 	$(MAKE) e2e-core
+
+.PHONY: lint
+lint:
+	GOMAXPROCS=2 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --no-config --default standard --concurrency 2 --timeout 5m --modules-download-mode readonly --max-issues-per-linter 0 --max-same-issues 0 --uniq-by-line=false ./...

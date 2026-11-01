@@ -65,7 +65,7 @@ func NewCompletionFault(endpoint, bucket, mode string) (*CompletionFault, error)
 		if errors.Is(err, errCompletionResponseDropped) {
 			connection, _, hijackErr := response.(http.Hijacker).Hijack()
 			if hijackErr == nil {
-				connection.Close()
+				_ = connection.Close()
 				return
 			}
 			err = hijackErr

@@ -159,7 +159,7 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 
 	log.Infof("[%s/%s]New %s from %s",
 		server.GetConnect().App, server.GetPublish().Name,
-		strings.ToUpper(server.Method()), conn.Conn.RemoteAddr())
+		strings.ToUpper(server.Method()), conn.RemoteAddr())
 
 	// 3. play或者publish
 	switch server.Method() {

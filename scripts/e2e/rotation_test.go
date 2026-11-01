@@ -27,7 +27,7 @@ func TestRotationCompletionProxyPreservesSigningAuthority(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
 		test.Fatal("completion proxy changed the signed authority, path, query, headers or manifest")
 	}

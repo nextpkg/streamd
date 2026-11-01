@@ -208,12 +208,12 @@ func (harness *harness) objectSnapshot(app string, complete bool) (map[string]an
 			return nil, err
 		}
 		if response.StatusCode != http.StatusOK {
-			response.Body.Close()
+			_ = response.Body.Close()
 			return nil, fmt.Errorf("completed object GET: %d", response.StatusCode)
 		}
 		body = response.Body
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 	directory := filepath.Join(harness.evidence, "recordings", app)
 	if err := os.MkdirAll(directory, 0700); err != nil {
 		return nil, err

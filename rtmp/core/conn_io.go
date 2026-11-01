@@ -63,7 +63,7 @@ ReadChunk:
 		}
 
 		// 更新读时间
-		r.Active.Keepalive()
+		r.Keepalive()
 
 		// 类型转换
 		switch cs.typeID {
@@ -103,11 +103,11 @@ ReadChunk:
 	}
 
 	// 更新统计信息
-	r.Active.SetMediaTime(p)
-	r.Stat.Update(p)
+	r.SetMediaTime(p)
+	r.Update(p)
 
 	metrics.Average(r.Info().App, r.Info().Instance, metrics.ChannelsBW,
-		float64(r.Stat.VideoBps()+r.Stat.AudioBps())*8,
+		float64(r.VideoBps()+r.AudioBps())*8,
 	)
 
 	return nil

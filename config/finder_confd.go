@@ -34,13 +34,13 @@ func (f *Finder) transform(key string) string {
 		return key
 	}
 
-	return strings.Replace(key, "/", f.Separator, -1)
+	return strings.ReplaceAll(key, "/", f.Separator)
 }
 
 func (f *Finder) clean(key string) string {
 	k := key
 	if f.Separator != "/" {
-		k = strings.Replace(k, f.Separator, "/", -1)
+		k = strings.ReplaceAll(k, f.Separator, "/")
 	}
 
 	if !strings.HasPrefix(k, "/") {
@@ -50,15 +50,11 @@ func (f *Finder) clean(key string) string {
 	return k
 }
 
-func (f *Finder) makeCache(key string) (map[string]string, error) {
-	return f.makeCacheContext(f.runtime.ctx, key)
-}
-
 func (f *Finder) makeCacheContext(ctx context.Context, key string) (map[string]string, error) {
 	vars := make(map[string]string)
 
 	key = f.clean(key)
-	k := strings.Replace(key, "/*", "", -1)
+	k := strings.ReplaceAll(key, "/*", "")
 	k = strings.TrimSuffix(k, "/")
 	k = f.transform(k)
 
@@ -121,33 +117,6 @@ func (f *Finder) makeCacheContext(ctx context.Context, key string) (map[string]s
 	}
 
 	return vars, nil
-}
-
-func (f *Finder) watch(rpb *redis.PubSub) error {
-	for {
-		n, err := rpb.Receive(f.runtime.ctx)
-		if err != nil {
-			return err
-		}
-
-		switch n.(type) {
-		case *redis.Message:
-			m := n.(*redis.Message)
-			log.Debugf("Redis Message: %s %s", m.Channel, m.Payload)
-
-			commands := [6]string{"set", "del", "append", "rename_from", "rename_to", "expire"}
-			for _, command := range commands {
-				if command == m.Payload {
-					return nil
-				}
-			}
-		case *redis.Subscription:
-			m := n.(*redis.Subscription)
-			if m.Count == 0 {
-				return fmt.Errorf("redis Subscription: %s %s %dc", m.Kind, m.Channel, m.Count)
-			}
-		}
-	}
 }
 
 func (f *Finder) store(c *confd) error {

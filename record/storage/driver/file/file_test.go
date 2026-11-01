@@ -1,7 +1,7 @@
 package file
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +10,7 @@ import (
 func TestNewFileDriver(t *testing.T) {
 	at := assert.New(t)
 
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp(t.TempDir(), "recording")
 	at.Nil(err)
 	at.Nil(f.Close())
 
@@ -21,7 +21,7 @@ func TestNewFileDriver(t *testing.T) {
 	at.Nil(fd.Write(data))
 	at.Nil(fd.Close(true, true))
 
-	buf, err1 := ioutil.ReadFile(f.Name())
+	buf, err1 := os.ReadFile(f.Name())
 	at.Nil(err1)
 	at.Equal(data, buf)
 }

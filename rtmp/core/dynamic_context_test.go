@@ -79,7 +79,12 @@ func TestDynamicRelayQueuedStartupCancellationDoesNotStopOwner(test *testing.T) 
 	puller.play = func() error { close(entered); <-puller.closed; return net.ErrClosed }
 	owner := make(chan error, 1)
 	go func() { owner <- relay.Start() }()
-	defer func() { relay.Stop(); <-owner }()
+	defer func() {
+		relay.Stop()
+		if err := <-owner; !errors.Is(err, net.ErrClosed) {
+			test.Errorf("stopped owner returned %v, want closed connection", err)
+		}
+	}()
 	awaitRelaySignal(test, entered)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

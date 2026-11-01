@@ -344,7 +344,7 @@ func (cs *ChunkStream) writeChunkBasicHeader(w *ReadWriter) error {
 	case cs.csid-64 < 256:
 		// csid[64,256)
 		// 0表示块基本头为2个字节
-		err := w.WriteUintBE(h|0x00, 1)
+		err := w.WriteUintBE(h, 1)
 		if err != nil {
 			return err
 		}

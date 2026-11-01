@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -89,7 +88,7 @@ func (store *Storage) RefreshSettings(settings *config.AppRecorder) {
 }
 
 func (store *Storage) Release() {
-	store.reapFinalizations(true)
+	_ = store.reapFinalizations(true) // Finalization failures are retained and reported by the worker.
 	if store.release != nil {
 		store.release()
 		store.release = nil
@@ -109,7 +108,7 @@ func (s *Storage) Open() (result error) {
 	if s.isOpen.Load() {
 		return nil
 	}
-	s.reapFinalizations(false)
+	_ = s.reapFinalizations(false) // Collect completed segments; retain errors for the blocking close.
 
 	err := s.prepare()
 	if err != nil {
@@ -213,7 +212,7 @@ func (s *Storage) open() error {
 //
 // 参数，block 阻塞等待Close结束
 func (s *Storage) Close(block bool) (result error) {
-	s.reapFinalizations(false)
+	_ = s.reapFinalizations(false) // Collect completed segments; retain errors for the blocking close.
 	if !s.isOpen.CompareAndSwap(true, false) {
 		if block {
 			if s.WaitingFinalization() {
@@ -322,7 +321,7 @@ func (s *Storage) WriteAt(pts uint32, data []byte, next ...uint64) error {
 
 // ReadLastFile 读取最后一个文件的内存（哪怕已经关闭）(测试用）
 func (s *Storage) ReadLastFile() ([]byte, error) {
-	return ioutil.ReadFile(s.fullPath)
+	return os.ReadFile(s.fullPath)
 }
 
 // CanSplit 指示是否能被分割

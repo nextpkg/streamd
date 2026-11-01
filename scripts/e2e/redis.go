@@ -118,7 +118,7 @@ func (harness *harness) redisDiscovery() (result error) {
 	}
 	harness.results["redis_outage_started_seconds"] = time.Since(harness.started).Seconds()
 	if err := primary.client.Ping(harness.ctx).Err(); err == nil {
-		return errors.New("Redis outage was not enforced")
+		return errors.New("redis outage was not enforced")
 	}
 	if err := harness.sleep(6 * time.Second); err != nil {
 		return err
@@ -128,7 +128,7 @@ func (harness *harness) redisDiscovery() (result error) {
 	}
 	binding, err := primary.runner.command(commandContext, "port", primary.runner.name, "6379/tcp")
 	if err != nil || strings.TrimSpace(string(binding)) != primary.address {
-		return fmt.Errorf("Redis restart changed the tested endpoint: %s: %v", binding, err)
+		return fmt.Errorf("redis restart changed the tested endpoint: %s: %v", binding, err)
 	}
 	if err := harness.until("Redis restart readiness at the original endpoint", 10*time.Second, func() (bool, error) { return primary.client.Ping(harness.ctx).Err() == nil, nil }); err != nil {
 		return err
@@ -140,7 +140,7 @@ func (harness *harness) redisDiscovery() (result error) {
 	previousInfo := harness.results["redis_container_primary"].(map[string]any)["server_info"].(string)
 	previousID, restartedID := redisRunID(previousInfo), redisRunID(info)
 	if previousID == "" || restartedID == "" || previousID == restartedID {
-		return errors.New("Redis process restart was not independently confirmed")
+		return errors.New("redis process restart was not independently confirmed")
 	}
 	harness.results["redis_restart"] = map[string]any{"address_unchanged": true, "previous_run_id": previousID, "restarted_run_id": restartedID}
 	if err := harness.redisRegistry(primary, "reregistered_after_restart"); err != nil {
@@ -168,7 +168,7 @@ func (harness *harness) redisDiscovery() (result error) {
 	for _, app := range []string{"flv", "ts"} {
 		state, err := harness.recordingStatus(app)
 		if err != nil || state.State != "active" || state.Revision != 2 || state.Failures != 0 {
-			return fmt.Errorf("Redis transition affected recording: %+v: %v", state, err)
+			return fmt.Errorf("redis transition affected recording: %+v: %v", state, err)
 		}
 	}
 	harness.results["redis_recorders_healthy"] = true

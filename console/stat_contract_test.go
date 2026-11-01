@@ -34,7 +34,7 @@ func TestStatisticsHTTPContractPreservesLegacyQueries(test *testing.T) {
 			}
 			var envelope map[string]any
 			err = json.NewDecoder(response.Body).Decode(&envelope)
-			response.Body.Close()
+			_ = response.Body.Close()
 			if err != nil || response.StatusCode != query.status || response.Header.Get("Content-Type") != "application/json" || len(envelope) != 3 {
 				test.Fatalf("%s%s status=%d envelope=%v error=%v", route, query.value, response.StatusCode, envelope, err)
 			}
@@ -64,7 +64,7 @@ func TestStatisticsHTTPContractPreservesLegacyQueries(test *testing.T) {
 				test.Fatal(err)
 			}
 			body, err := io.ReadAll(response.Body)
-			response.Body.Close()
+			_ = response.Body.Close()
 			if err != nil {
 				test.Fatal(err)
 			}

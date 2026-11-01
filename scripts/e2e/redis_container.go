@@ -49,7 +49,7 @@ func (harness *harness) startRedisContainer(label string) (container *redisConta
 	}
 	identity := fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid())
 	if os.Getuid() == 0 {
-		return container, errors.New("Redis E2E requires a non-root container owner")
+		return container, errors.New("redis E2E requires a non-root container owner")
 	}
 	port, err := freePort()
 	if err != nil {

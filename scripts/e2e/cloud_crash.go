@@ -49,15 +49,16 @@ func validateCloudCrashState(mode string, seed, crashed crashCloudState) error {
 	if len(crashed.Uploads) != 2 || len(crashed.Parts) != 2 {
 		return errors.New("crash requires two real multipart uploads")
 	}
-	if mode == "missing" {
+	switch mode {
+	case "missing":
 		if len(crashed.Checkpoints) != 0 {
 			return errors.New("missing-checkpoint fixture unexpectedly persisted state")
 		}
-	} else if mode == "confirmed" || mode == "stale" {
+	case "confirmed", "stale":
 		if len(seed.Checkpoints) != 2 || !reflect.DeepEqual(seed.Checkpoints, crashed.Checkpoints) || !reflect.DeepEqual(seed.Uploads, crashed.Uploads) {
 			return errors.New("crash changed the confirmed checkpoint or upload identity")
 		}
-	} else {
+	default:
 		return errors.New("unknown cloud crash state")
 	}
 	for _, upload := range crashed.Uploads {

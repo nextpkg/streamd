@@ -69,7 +69,7 @@ func (harness *harness) redisContract(container *redisContainer) (result error) 
 			return err
 		}
 		if !probe.settings.Finder.Keepalive(probe.app, "nested/channel") {
-			return errors.New("Redis renewal failed")
+			return errors.New("redis renewal failed")
 		}
 		ttl, err := client.PTTL(harness.ctx, probe.key).Result()
 		if err != nil || ttl < 4*time.Second || ttl > 5*time.Second {
@@ -119,13 +119,13 @@ func (harness *harness) redisContract(container *redisContainer) (result error) 
 	defer func() { result = errors.Join(result, client.ACLSetUser(harness.ctx, "observer", "+get").Err()) }()
 	_, denied := polling.Finder.FindAdvice("probe", "polled")
 	if denied == nil || !strings.Contains(denied.Error(), "NOPERM") {
-		return fmt.Errorf("Redis ACL denial not exercised: %v", denied)
+		return fmt.Errorf("redis ACL denial not exercised: %v", denied)
 	}
 	if err := harness.sleep(1500 * time.Millisecond); err != nil {
 		return err
 	}
 	if polling.Finder.GetBackend("probe", "polled") != "confirmed-peer" {
-		return errors.New("Redis read failure erased the confirmed discovery cache")
+		return errors.New("redis read failure erased the confirmed discovery cache")
 	}
 	rejected, err := harness.redisFinder(container, "probe", "/", 1, "observer")
 	if rejected != nil {
@@ -163,7 +163,7 @@ func (harness *harness) redisCacheLayouts(container *redisContainer) error {
 		actual := settings.Finder.GetBackend(layout.app, layout.channel)
 		settings.Revoke()
 		if actual != layout.expected {
-			return fmt.Errorf("Redis %s cache layout: got %q want %q", layout.app, actual, layout.expected)
+			return fmt.Errorf("redis %s cache layout: got %q want %q", layout.app, actual, layout.expected)
 		}
 	}
 	pipeline := client.Pipeline()
@@ -184,7 +184,7 @@ func (harness *harness) redisCacheLayouts(container *redisContainer) error {
 	defer settings.Revoke()
 	for index := 0; index < 1500; index++ {
 		if settings.Finder.GetBackend("pages", fmt.Sprintf("channel-%04d", index)) != "paged-peer" {
-			return fmt.Errorf("Redis SCAN lost channel %d", index)
+			return fmt.Errorf("redis SCAN lost channel %d", index)
 		}
 	}
 	after, err := client.Info(harness.ctx, "commandstats").Result()
@@ -203,7 +203,7 @@ func (harness *harness) redisCacheLayouts(container *redisContainer) error {
 	}
 	calls := readCalls(after) - readCalls(before)
 	if calls < 2 {
-		return fmt.Errorf("Redis SCAN pagination not exercised: %d calls", calls)
+		return fmt.Errorf("redis SCAN pagination not exercised: %d calls", calls)
 	}
 	harness.results["redis_cache_layouts"] = map[string]any{"string_root": true, "hash_custom_separator": true, "paged_key_count": 1500, "scan_calls": calls}
 	return nil

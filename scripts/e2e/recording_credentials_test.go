@@ -78,7 +78,7 @@ func TestCredentialTraceOnlyExemptsNewRecordingCheckpointMisses(test *testing.T)
 			if err := trace.response(response); err != nil {
 				test.Fatal(err)
 			}
-			response.Body.Close()
+			_ = response.Body.Close()
 			if scenario.expected {
 				if trace.missingCheckpoints != 1 || len(trace.denied) != 0 {
 					test.Fatal("normal new checkpoint read rejected")
