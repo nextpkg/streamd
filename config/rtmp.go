@@ -1,10 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"sync/atomic"
-
-	errors "github.com/nextpkg/streamd/internal/errutil"
 )
 
 type slabSettings struct{ minimum, maximum int }

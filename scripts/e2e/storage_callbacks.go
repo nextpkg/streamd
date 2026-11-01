@@ -148,7 +148,8 @@ func validateStorageCallbacks(observations []callbackObservation, files, failed 
 		case "OnRecord", "OnRecordDone":
 			location, locationOK := payload["location"].(string)
 			connection, connectionOK := payload["connInfo"].(map[string]any)
-			if len(payload) != 6 || !locationOK || !connectionOK || !strings.HasPrefix(location, "/"+key+"/") || path.Ext(location) != "."+strings.Split(key, "/")[0] || payload["filename"] != path.Base(location) || connection["app"] != strings.Split(key, "/")[0] {
+			app, _, _ := strings.Cut(key, "/")
+			if len(payload) != 6 || !locationOK || !connectionOK || !strings.HasPrefix(location, "/"+key+"/") || path.Ext(location) != "."+app || payload["filename"] != path.Base(location) || connection["app"] != app {
 				return nil, errors.New("recording callback fields mismatch")
 			}
 			identity := strings.TrimPrefix(observation.Path, "/") + location

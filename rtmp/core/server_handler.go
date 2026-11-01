@@ -1,10 +1,10 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/nextpkg/goav/amf"
-	errors "github.com/nextpkg/streamd/internal/errutil"
 	log "github.com/nextpkg/streamd/internal/logging"
 )
 
