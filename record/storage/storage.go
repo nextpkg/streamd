@@ -206,11 +206,7 @@ func (s *Storage) open() error {
 	return nil
 }
 
-// Close 关闭存储器
-//
-// 参数，complete 告诉驱动器文件正常结束与否
-//
-// 参数，block 阻塞等待Close结束
+// Close 关闭当前片段；block 为 true 时等待片段收尾完成并返回累计错误。
 func (s *Storage) Close(block bool) (result error) {
 	_ = s.reapFinalizations(false) // Collect completed segments; retain errors for the blocking close.
 	if !s.isOpen.CompareAndSwap(true, false) {

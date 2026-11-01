@@ -34,8 +34,7 @@ var defaultOption = option{
 type Conn struct {
 	net.Conn
 	/**
-	rtmp传输的块大小，设置RTMP的最大chunk尺寸。
-	该值越小，CPU使用率越高，延时越低；反之该值越大，CPU使用率越高，延时越高。
+	RTMP 发送 chunk 大小；较小的 chunk 会增加每条消息的分块数量和头部开销。
 	*/
 	chunkSize       uint32 // 本地的块大小，按此标准写chunk
 	remoteChunkSize uint32 // 远程的块大小，按此标准读chunk
@@ -277,8 +276,7 @@ func (c *Conn) handleControlMsg(cs *ChunkStream) bool {
 		streamID := binary.BigEndian.Uint32(cs.data)
 
 		/**
-		一个实例一个streamID，只要配对上了就可以关闭流，这种方式可以实现用户控制服务端关闭连接。
-		但由于用户主动关闭的效果差别也不大，我们也没找到被动关闭的使用场景，因此这里不实现。
+		当前仅记录 Abort Message，不处理其指定 chunk stream 的重组状态。
 		*/
 		log.Errorf("ignore unrealize abort message, stream id=%d", streamID)
 		return true
