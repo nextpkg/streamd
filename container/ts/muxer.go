@@ -3,6 +3,7 @@ package ts
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -231,14 +232,8 @@ func (muxer *Muxer) SDT(desc *bytes.Buffer) []byte {
 
 	// 计算CRC32
 	crc32Value := GenerateCrc32(muxer.sdt[len(sdt.TsHeader):i])
-	muxer.sdt[i] = byte(crc32Value >> 24)
-	i++
-	muxer.sdt[i] = byte(crc32Value >> 16)
-	i++
-	muxer.sdt[i] = byte(crc32Value >> 8)
-	i++
-	muxer.sdt[i] = byte(crc32Value)
-	i++
+	binary.BigEndian.PutUint32(muxer.sdt[i:i+4], crc32Value)
+	i += 4
 
 	for j := 0; j < tsPacketLen-i; j++ {
 		muxer.sdt[i+j] = 0xff
@@ -267,14 +262,8 @@ func (muxer *Muxer) PAT() []byte {
 
 	// 计算CRC32
 	crc32Value := GenerateCrc32(pat.PatHeader)
-	muxer.pat[i] = byte(crc32Value >> 24)
-	i++
-	muxer.pat[i] = byte(crc32Value >> 16)
-	i++
-	muxer.pat[i] = byte(crc32Value >> 8)
-	i++
-	muxer.pat[i] = byte(crc32Value)
-	i++
+	binary.BigEndian.PutUint32(muxer.pat[i:i+4], crc32Value)
+	i += 4
 
 	for j := 0; j < tsPacketLen-i; j++ {
 		muxer.pat[i+j] = 0xff
@@ -325,14 +314,8 @@ func (muxer *Muxer) PMT(mediaType ...int) []byte {
 
 	// 计算CRC32
 	crc32Value := GenerateCrc32(muxer.pmt[len(pmt.TsHeader):i])
-	muxer.pmt[i] = byte(crc32Value >> 24)
-	i++
-	muxer.pmt[i] = byte(crc32Value >> 16)
-	i++
-	muxer.pmt[i] = byte(crc32Value >> 8)
-	i++
-	muxer.pmt[i] = byte(crc32Value)
-	i++
+	binary.BigEndian.PutUint32(muxer.pmt[i:i+4], crc32Value)
+	i += 4
 
 	for j := 0; j < tsPacketLen-i; j++ {
 		muxer.pmt[i+j] = 0xff

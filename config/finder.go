@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"errors"
+	"maps"
 	"net"
 	"strconv"
 	"strings"
@@ -313,9 +314,7 @@ func (finder *Finder) inheritLocalRegistrations(previous *Finder) {
 	for name, cache := range previous.runtime.confd {
 		if next := finder.cacheFor(name); next != nil {
 			cache.m.RLock()
-			for key, value := range cache.cache {
-				next.cache[key] = value
-			}
+			maps.Copy(next.cache, cache.cache)
 			cache.m.RUnlock()
 		}
 	}

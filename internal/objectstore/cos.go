@@ -26,11 +26,11 @@ func (cfg *COSConfig) endpoint() string {
 	if cfg.Endpoint != "" {
 		return cfg.Endpoint
 	}
-	address := strings.SplitN(cfg.Address, ".", 2)
-	if len(address) != 2 {
+	bucket, region, found := strings.Cut(cfg.Address, ".")
+	if !found {
 		return ""
 	}
-	return "https://" + address[0] + ".cos." + address[1] + ".myqcloud.com"
+	return "https://" + bucket + ".cos." + region + ".myqcloud.com"
 }
 
 func (cfg *COSConfig) Validate() error {
