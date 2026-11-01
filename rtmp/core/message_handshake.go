@@ -11,8 +11,8 @@ import (
 	"net"
 	"time"
 
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // 握手过程的超时时间
@@ -47,13 +47,13 @@ func (c *Conn) write(data []byte) error {
 	// 将协议数据写入网络缓冲中
 	n, err := c.rw.Write(data)
 	if err != nil {
-		return errors.Wrapf(err, "write failed,wrote=%d", n)
+		return errutil.Wrapf(err, "write failed,wrote=%d", n)
 	}
 
 	// 使缓冲的数据写入网络通道
 	err = c.rw.Flush()
 	if err != nil {
-		return errors.Wrap(err, "flush failed")
+		return errutil.Wrap(err, "flush failed")
 	}
 
 	return nil
@@ -65,7 +65,7 @@ func (c *Conn) read(data []byte) error {
 	// 从网络缓冲中读取对端数据
 	n, err := c.rw.Read(data)
 	if err != nil {
-		return errors.Wrapf(err, "read failed,read=%d", n)
+		return errutil.Wrapf(err, "read failed,read=%d", n)
 	}
 
 	return nil
@@ -74,8 +74,8 @@ func (c *Conn) read(data []byte) error {
 func (c *Conn) resetTimer() {
 	// reset deadline for client handshake
 	err := c.SetDeadline(time.Time{})
-	if err != nil && !errors.Is(err, net.ErrClosed) {
-		log.Error(errors.Wrap(err, "reset connection timer failed"))
+	if err != nil && !errutil.Is(err, net.ErrClosed) {
+		logging.Error(errutil.Wrap(err, "reset connection timer failed"))
 	}
 }
 
@@ -84,7 +84,7 @@ func (c *Conn) HandshakeClient() error {
 
 	err := c.SetDeadline(time.Now().Add(handshakeTimeout))
 	if err != nil {
-		return errors.Wrap(err, "set deadline failed")
+		return errutil.Wrap(err, "set deadline failed")
 	}
 	defer c.resetTimer()
 
@@ -108,18 +108,18 @@ func (c *Conn) HandshakeClient() error {
 	var n int
 	n, err = rand.Read(C1[8:])
 	if err != nil {
-		return errors.Wrapf(err, "get random number failed,read=%d", n)
+		return errutil.Wrapf(err, "get random number failed,read=%d", n)
 	}
 
 	// -> C0C1
 	C0C1 := C0C1C2[:1536+1]
 	if err := c.write(C0C1); err != nil {
-		return errors.Wrap(err, "send C0C1")
+		return errutil.Wrap(err, "send C0C1")
 	}
 
 	// <- S0S1S2
 	if err := c.read(S0S1S2); err != nil {
-		return errors.Wrap(err, "receive S0S1S2")
+		return errutil.Wrap(err, "receive S0S1S2")
 	}
 
 	if S0[0] != 3 {
@@ -129,10 +129,10 @@ func (c *Conn) HandshakeClient() error {
 	// 简单握手 -> C2
 	C2 := S1
 	if err := c.write(C2); err != nil {
-		return errors.Wrap(err, "send C2")
+		return errutil.Wrap(err, "send C2")
 	}
 
-	log.Trace("client handshake is finished")
+	logging.Trace("client handshake is finished")
 	return nil
 }
 
@@ -141,7 +141,7 @@ func (c *Conn) HandshakeServer() error {
 
 	err := c.SetDeadline(time.Now().Add(handshakeTimeout))
 	if err != nil {
-		return errors.Wrap(err, "set deadline")
+		return errutil.Wrap(err, "set deadline")
 	}
 	defer c.resetTimer()
 
@@ -161,7 +161,7 @@ func (c *Conn) HandshakeServer() error {
 	C0C1 := C0C1C2[:1536+1]
 	err = c.read(C0C1)
 	if err != nil {
-		return errors.Wrap(err, "read C0C1")
+		return errutil.Wrap(err, "read C0C1")
 	}
 
 	if C0[0] != 3 {
@@ -181,19 +181,19 @@ func (c *Conn) HandshakeServer() error {
 		// 用client key计算C1的摘要, 再用server key计算C1摘要的摘要并返回
 		digest, err := getDigest(C1, clientPartialKey, serverFullKey)
 		if err != nil {
-			return errors.Wrap(err, "calculate C1 digest")
+			return errutil.Wrap(err, "calculate C1 digest")
 		}
 
 		// 计算S1的签名, 填充到S1中
 		err = createDigestC1S1(S1, sTime, sVersion, serverPartialKey)
 		if err != nil {
-			return errors.Wrap(err, "calculate C1S1 digest")
+			return errutil.Wrap(err, "calculate C1S1 digest")
 		}
 
 		// 计算S2的签名, 填充到S2中
 		err = createDigestC2S2(S2, digest)
 		if err != nil {
-			return errors.Wrap(err, "calculate C2S2 digest")
+			return errutil.Wrap(err, "calculate C2S2 digest")
 		}
 	} else {
 
@@ -204,15 +204,15 @@ func (c *Conn) HandshakeServer() error {
 
 	// -> S0S1S2
 	if err := c.write(S0S1S2); err != nil {
-		return errors.Wrap(err, "send S0S1S2")
+		return errutil.Wrap(err, "send S0S1S2")
 	}
 
 	// <- C2
 	if err := c.read(C2); err != nil {
-		return errors.Wrap(err, "receive C2")
+		return errutil.Wrap(err, "receive C2")
 	}
 
-	log.Trace("server handshake is finished")
+	logging.Trace("server handshake is finished")
 	return nil
 }
 
@@ -222,7 +222,7 @@ func getDigest(c1s1 []byte, clientKey []byte, serverKey []byte) ([]byte, error) 
 	// schema0: |time: 4bytes|version: 4bytes|key: 764bytes|digest: 764bytes|
 	digestDataPos, err := findDigestPos(c1s1, clientKey, 772)
 	if err != nil {
-		return nil, errors.Wrap(err, "schema0 find digest data position failed")
+		return nil, errutil.Wrap(err, "schema0 find digest data position failed")
 	}
 
 	// schema1: |time: 4bytes|version: 4bytes|digest: 764bytes|key: 764bytes|
@@ -230,7 +230,7 @@ func getDigest(c1s1 []byte, clientKey []byte, serverKey []byte) ([]byte, error) 
 
 		digestDataPos, err = findDigestPos(c1s1, clientKey, 8)
 		if digestDataPos == -1 {
-			return nil, errors.Wrap(err, "schema1 find digest data position failed")
+			return nil, errutil.Wrap(err, "schema1 find digest data position failed")
 		}
 	}
 
@@ -244,7 +244,7 @@ func createDigestC1S1(c1s1 []byte, time uint32, version uint32, serverKey []byte
 	// 随机值
 	n, err := rand.Read(c1s1[8:])
 	if err != nil {
-		return errors.Wrapf(err, "read C1S1 random data failed,length=%d", n)
+		return errutil.Wrapf(err, "read C1S1 random data failed,length=%d", n)
 	}
 
 	binary.BigEndian.PutUint32(c1s1[0:4], time)
@@ -260,7 +260,7 @@ func createDigestC1S1(c1s1 []byte, time uint32, version uint32, serverKey []byte
 	var digest []byte
 	digest, err = createDigest(serverKey, c1s1, digestDataPos)
 	if err != nil {
-		return errors.Wrap(err, "create C1S1 digest failed")
+		return errutil.Wrap(err, "create C1S1 digest failed")
 	}
 
 	copy(c1s1[digestDataPos:], digest)
@@ -276,7 +276,7 @@ func createDigestC2S2(c2s2 []byte, key []byte) error {
 
 	n, err := rand.Read(c2s2)
 	if err != nil {
-		return errors.Wrapf(err, "read C2S2 random data failed,length=%d", n)
+		return errutil.Wrapf(err, "read C2S2 random data failed,length=%d", n)
 	}
 
 	digestDataPos := len(c2s2) - 32
@@ -284,7 +284,7 @@ func createDigestC2S2(c2s2 []byte, key []byte) error {
 	var digest []byte
 	digest, err = createDigest(key, c2s2, digestDataPos)
 	if err != nil {
-		return errors.Wrap(err, "calculate digest")
+		return errutil.Wrap(err, "calculate digest")
 	}
 
 	copy(c2s2[digestDataPos:], digest)
@@ -306,7 +306,7 @@ func findDigestPos(c1s1 []byte, clientKey []byte, base int) (int, error) {
 	// 如果不匹配, 说明找到的不是digest数据, 而是key数据
 	digest, err := createDigest(clientKey, c1s1, digestDataPos)
 	if err != nil {
-		return 0, errors.Wrap(err, "calculate digest")
+		return 0, errutil.Wrap(err, "calculate digest")
 	}
 
 	// 比较数字签名
@@ -346,20 +346,20 @@ func createDigest(key []byte, src []byte, digestDataPos int) ([]byte, error) {
 		// 全部数据参与计算摘要
 		n, err := h.Write(src)
 		if err != nil {
-			return nil, errors.Wrapf(err, "write hmac,length=%d", n)
+			return nil, errutil.Wrapf(err, "write hmac,length=%d", n)
 		}
 	} else {
 
 		// include offset, random-data
 		n, err := h.Write(src[:digestDataPos])
 		if err != nil {
-			return nil, errors.Wrapf(err, "write hmac include offset and random data,length=%d", n)
+			return nil, errutil.Wrapf(err, "write hmac include offset and random data,length=%d", n)
 		}
 
 		// include random-data
 		n, err = h.Write(src[digestDataPos+32:])
 		if err != nil {
-			return nil, errors.Wrapf(err, "write hmac include random data,length=%d", n)
+			return nil, errutil.Wrapf(err, "write hmac include random data,length=%d", n)
 		}
 	}
 

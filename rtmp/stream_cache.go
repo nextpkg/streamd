@@ -5,7 +5,7 @@ import (
 
 	"github.com/nextpkg/goav/amf"
 	"github.com/nextpkg/streamd/config"
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 	"github.com/nextpkg/streamd/packet"
 )
 
@@ -17,12 +17,12 @@ func (s *Stream) writeCache(p *packet.Packet) error {
 	case packet.PktVideo:
 		err := c.WriteVideo(p)
 		if err != nil {
-			return errors.Wrap(err, "write video failed")
+			return errutil.Wrap(err, "write video failed")
 		}
 	case packet.PktAudio:
 		err := c.WriteAudio(p)
 		if err != nil {
-			return errors.Wrap(err, "write audio failed")
+			return errutil.Wrap(err, "write audio failed")
 		}
 	case packet.PktMetadata:
 		publish := s.rConn.GetPublish()
@@ -39,7 +39,7 @@ func (s *Stream) writeCache(p *packet.Packet) error {
 		cmdBuf := bytes.NewBuffer(nil)
 		err := amf.NewEnDecAMF0().EncodeBatch(cmdBuf, amf.OnMetaData, amf.Object(publish.MetaData))
 		if err != nil {
-			return errors.Wrap(err, "amf0 batch encode metadata failed")
+			return errutil.Wrap(err, "amf0 batch encode metadata failed")
 		}
 
 		// 缓存metadata包

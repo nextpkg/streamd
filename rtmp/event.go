@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/nextpkg/streamd/internal/httpx"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 type eventFunc func()
@@ -29,13 +29,13 @@ func fireEvent(name, url, key string) eventFunc {
 			"occur": time.Now().UnixNano() / int64(time.Millisecond),
 		})
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 			return
 		}
 
 		// 发送post请求
 		report := func(failure error) {
-			log.Errorf("[%s]err=%s,event=%s", key, failure, name)
+			logging.Errorf("[%s]err=%s,event=%s", key, failure, name)
 		}
 		if err := httpx.SubmitJSON(url, data, report); err != nil {
 			report(err)

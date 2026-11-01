@@ -12,9 +12,9 @@ import (
 	"github.com/nextpkg/streamd/config"
 	containerflv "github.com/nextpkg/streamd/container/flv"
 	"github.com/nextpkg/streamd/packet"
-	flvrecord "github.com/nextpkg/streamd/record/flv"
+	recordflv "github.com/nextpkg/streamd/record/flv"
 	"github.com/nextpkg/streamd/record/storage"
-	tsrecord "github.com/nextpkg/streamd/record/ts"
+	recordts "github.com/nextpkg/streamd/record/ts"
 	"github.com/nextpkg/streamd/rtmp/core"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +27,7 @@ func TestRecordingFinalizesMedia(t *testing.T) {
 		name      string
 		newStream func(*base.Info, *storage.Storage) *core.Funnel
 		verify    func(*testing.T, []byte, []byte, []byte)
-	}{{"flv", flvrecord.NewStream, verifyRecordedFLV}, {"ts", tsrecord.NewStream, verifyRecordedTS}} {
+	}{{"flv", recordflv.NewStream, verifyRecordedFLV}, {"ts", recordts.NewStream, verifyRecordedTS}} {
 		for _, keyframe := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/keyframe=%v", format.name, keyframe), func(t *testing.T) {
 				directory := t.TempDir()

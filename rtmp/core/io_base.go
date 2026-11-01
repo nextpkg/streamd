@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"io"
 
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 )
 
 // ReadWriter 读写缓冲器
@@ -32,7 +32,7 @@ func (rw *ReadWriter) Read(p []byte) (int, error) {
 func (rw *ReadWriter) ReadUintBE(n int) (uint32, error) {
 	// 只接收最多4个字节的大小, 以uint32存储
 	if n > 4 {
-		return 0, errors.New("uint32 overflow")
+		return 0, errutil.New("uint32 overflow")
 	}
 
 	// 读取n个字节, 以大端的形式保持到uint32中
@@ -53,7 +53,7 @@ func (rw *ReadWriter) ReadUintBE(n int) (uint32, error) {
 func (rw *ReadWriter) ReadUintLE(n int) (uint32, error) {
 	// 只接收最多4个字节的大小, 以uint32存储
 	if n > 4 {
-		return 0, errors.New("uint32 overflow")
+		return 0, errutil.New("uint32 overflow")
 	}
 
 	// 读取n个字节, 以小端的形式保持到uint32中
@@ -76,7 +76,7 @@ func (rw *ReadWriter) ReadUintLE(n int) (uint32, error) {
 func (rw *ReadWriter) WriteUintBE(v uint32, n int) error {
 	// 因为v是uint32类型, 所以最多写入4个字节
 	if n > 4 {
-		return errors.New("uint32 overflow")
+		return errutil.New("uint32 overflow")
 	}
 
 	// 将v以大端的形式, 写入n个字节到缓冲中
@@ -85,7 +85,7 @@ func (rw *ReadWriter) WriteUintBE(v uint32, n int) error {
 
 		err := rw.WriteByte(b)
 		if err != nil {
-			return errors.Wrap(err, "write byte failed")
+			return errutil.Wrap(err, "write byte failed")
 		}
 	}
 
@@ -96,7 +96,7 @@ func (rw *ReadWriter) WriteUintBE(v uint32, n int) error {
 func (rw *ReadWriter) WriteUintLE(v uint32, n int) error {
 	// 因为v是uint32类型, 所以最多写入4个字节
 	if n > 4 {
-		return errors.New("uint32 overflow")
+		return errutil.New("uint32 overflow")
 	}
 
 	// 将v以小端的形式, 写入n个字节到缓冲中
@@ -105,7 +105,7 @@ func (rw *ReadWriter) WriteUintLE(v uint32, n int) error {
 
 		err := rw.WriteByte(b)
 		if err != nil {
-			return errors.Wrap(err, "write byte failed")
+			return errutil.Wrap(err, "write byte failed")
 		}
 
 		v = v >> 8

@@ -3,7 +3,7 @@ package console
 import (
 	"net/http"
 
-	web "github.com/nextpkg/streamd/internal/httpx"
+	"github.com/nextpkg/streamd/internal/httpx"
 	"github.com/nextpkg/streamd/rtmp"
 )
 
@@ -11,7 +11,7 @@ import (
 //
 // [GET]
 func (s *Server) statKeys(w http.ResponseWriter, _ *http.Request) {
-	ww := web.NewWriter(w)
+	ww := httpx.NewWriter(w)
 
 	rtmpConn := s.Handler.(*rtmp.Conn)
 	keys := rtmpConn.StreamKeys()
@@ -28,7 +28,7 @@ func (s *Server) statKeys(w http.ResponseWriter, _ *http.Request) {
 //
 // [GET]请求参数: key=app/instance
 func (s *Server) statPubInfo(w http.ResponseWriter, req *http.Request) {
-	ww := web.NewWriter(w)
+	ww := httpx.NewWriter(w)
 
 	// Get: key
 	key := req.URL.Query().Get("key")
@@ -61,7 +61,7 @@ func (s *Server) statPubInfo(w http.ResponseWriter, req *http.Request) {
 // statSubInfo 统计订阅连接的数据信息
 // [GET]请求参数: key=app/instance
 func (s *Server) statSubInfo(w http.ResponseWriter, req *http.Request) {
-	ww := web.NewWriter(w)
+	ww := httpx.NewWriter(w)
 
 	// Get: key
 	key := req.URL.Query().Get("key")
@@ -94,7 +94,7 @@ func (s *Server) statSubInfo(w http.ResponseWriter, req *http.Request) {
 //
 // [GET]请求参数: key=app/instance
 func (s *Server) statSubOnline(w http.ResponseWriter, req *http.Request) {
-	ww := web.NewWriter(w)
+	ww := httpx.NewWriter(w)
 	conn := s.Handler.(*rtmp.Conn)
 
 	// Get: key

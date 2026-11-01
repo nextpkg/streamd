@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // TsItem 可用TS列表中的项
@@ -140,7 +140,7 @@ func (t *TsItemCache) generateM3u8() ([]byte, time.Duration) {
 		// 填充文件名以及时长
 		_, err := fmt.Fprintf(m3u8Body, "#EXTINF:%.3f,\n%s\n", float64(item.duration)/1000, item.name)
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 			continue
 		}
 	}
@@ -158,7 +158,7 @@ func (t *TsItemCache) generateM3u8() ([]byte, time.Duration) {
 #EXT-X-MEDIA-SEQUENCE:%d
 %s`, targetDuration, firstSlice, m3u8Body.String())
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 	}
 
 	t.duration.Store(targetDuration * int64(len(data)))

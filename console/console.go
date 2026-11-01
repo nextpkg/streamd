@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/nextpkg/streamd/config"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	web "github.com/nextpkg/streamd/internal/httpx"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/httpx"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/rtmp"
 	"github.com/nextpkg/streamd/rtmp/core"
 )
@@ -47,7 +47,7 @@ func (s *Server) Init(r *http.ServeMux) *http.ServeMux {
 		guarded := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method != method && (method != http.MethodGet || request.Method != http.MethodHead) {
 				writer.Header().Set("Allow", method)
-				web.NewWriter(writer).QuickSendJSON(http.StatusMethodNotAllowed, "method not allowed", nil)
+				httpx.NewWriter(writer).QuickSendJSON(http.StatusMethodNotAllowed, "method not allowed", nil)
 				return
 			}
 			handler(writer, request)
@@ -74,11 +74,11 @@ func (s *Server) checkRtmpURL(rtmp *string) error {
 
 func (s *Server) checkRtmpURLContext(ctx context.Context, rtmp *string) error {
 	if rtmp == nil {
-		return errors.New("nil rtmp")
+		return errutil.New("nil rtmp")
 	}
 
 	if len(*rtmp) == 0 {
-		return errors.New("empty rtmp url")
+		return errutil.New("empty rtmp url")
 	}
 
 	location := *rtmp
@@ -87,7 +87,7 @@ func (s *Server) checkRtmpURLContext(ctx context.Context, rtmp *string) error {
 	}
 	u, err := url.Parse(location)
 	if err != nil {
-		return errors.New("invalid rtmp url")
+		return errutil.New("invalid rtmp url")
 	}
 
 	// scheme
@@ -95,14 +95,14 @@ func (s *Server) checkRtmpURLContext(ctx context.Context, rtmp *string) error {
 		u.Scheme = "rtmp"
 	}
 	if u.Scheme != "rtmp" || u.Hostname() == "" || u.User != nil || u.Fragment != "" {
-		return errors.New("invalid url protocol")
+		return errutil.New("invalid url protocol")
 	}
 
 	// path
 	path := strings.TrimLeft(u.Path, "/")
 	ps := strings.Split(path, "/")
 	if len(ps) != 2 || ps[0] == "" || ps[1] == "" {
-		return errors.New("missing rtmp key")
+		return errutil.New("missing rtmp key")
 	}
 
 	// port
@@ -118,7 +118,7 @@ func (s *Server) checkRtmpURLContext(ctx context.Context, rtmp *string) error {
 
 	portNumber, portErr := strconv.Atoi(port)
 	if portErr != nil || portNumber < 1 || portNumber > 65535 {
-		return errors.New("invalid rtmp port=" + port)
+		return errutil.New("invalid rtmp port=" + port)
 	}
 
 	resolve := s.resolveIP
@@ -184,7 +184,7 @@ func (s *Server) unlockRelay() { <-s.relayGate }
 	push:rtmp://{host}/{app}/{instance}
 */
 func (s *Server) relay(w http.ResponseWriter, req *http.Request) {
-	ww := web.NewWriter(w)
+	ww := httpx.NewWriter(w)
 
 	if !config.Get().Console.EnableRelay {
 		ww.QuickSendJSON(http.StatusUnauthorized, "Frozen relay api", nil)
@@ -201,7 +201,7 @@ func (s *Server) relay(w http.ResponseWriter, req *http.Request) {
 	pull := req.PostFormValue("pull")
 	err := s.checkRtmpURLContext(req.Context(), &pull)
 	if err != nil {
-		more := errors.Wrapf(err, "post(pull) is invalid,pull='%s'", pull)
+		more := errutil.Wrapf(err, "post(pull) is invalid,pull='%s'", pull)
 		ww.QuickSendJSON(http.StatusBadRequest, more.Error(), nil)
 		return
 	}
@@ -210,7 +210,7 @@ func (s *Server) relay(w http.ResponseWriter, req *http.Request) {
 	push := req.PostFormValue("push")
 	err = s.checkRtmpURLContext(req.Context(), &push)
 	if err != nil {
-		more := errors.Wrapf(err, "post(push) is invalid,push='%s'", push)
+		more := errutil.Wrapf(err, "post(push) is invalid,push='%s'", push)
 		ww.QuickSendJSON(http.StatusBadRequest, more.Error(), nil)
 		return
 	}
@@ -272,7 +272,7 @@ func (s *Server) relay(w http.ResponseWriter, req *http.Request) {
 			go func() {
 				<-finished
 				s.Session.CompareAndDelete(key, session)
-				log.Debug("Clear session: '", pull, "' TO '", push, "'")
+				logging.Debug("Clear session: '", pull, "' TO '", push, "'")
 			}()
 		}
 
@@ -285,5 +285,5 @@ func (s *Server) relay(w http.ResponseWriter, req *http.Request) {
 //
 // [GET]
 func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
-	web.NewWriter(w).QuickSendJSON(0, "OK", config.Get().Redacted())
+	httpx.NewWriter(w).QuickSendJSON(0, "OK", config.Get().Redacted())
 }

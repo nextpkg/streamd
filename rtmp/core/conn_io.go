@@ -7,8 +7,8 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/container/flv"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 	"github.com/nextpkg/streamd/packet"
 	"sync/atomic"
@@ -86,7 +86,7 @@ ReadChunk:
 
 	err := r.flv.Demux(p)
 	if err != nil {
-		return errors.Wrap(err, "flv demux failed")
+		return errutil.Wrap(err, "flv demux failed")
 	}
 
 	switch p.Type {
@@ -129,7 +129,7 @@ func (reader *Reader) Prefetch() error {
 func (reader *Reader) Close() {
 	reader.closeOnce.Do(func() {
 		if err := reader.conn.Close(); err != nil {
-			log.Trace("close failed")
+			logging.Trace("close failed")
 		}
 	})
 }
@@ -182,7 +182,7 @@ func (w *Writer) connRead() {
 		err := w.conn.Read(cs)
 		if err != nil {
 			// rtmp reader was closed
-			log.Tracef("[%s]err:%s", w.Info().Key, err)
+			logging.Tracef("[%s]err:%s", w.Info().Key, err)
 			break
 		}
 	}
@@ -210,7 +210,7 @@ func (w *Writer) Write(p *packet.Packet) error {
 	err := w.conn.Write(cs)
 	if err != nil {
 		w.Close()
-		return errors.Wrapf(err, "[%s]rtmp write failed", w.Info().Key)
+		return errutil.Wrapf(err, "[%s]rtmp write failed", w.Info().Key)
 	}
 
 	return nil
@@ -221,13 +221,13 @@ func (w *Writer) After() {
 	if !w.status.Load() {
 		if playback, ok := w.conn.(interface{ FinishPlayback() error }); ok {
 			if err := playback.FinishPlayback(); err != nil {
-				log.Trace(err)
+				logging.Trace(err)
 			}
 		}
 	}
 
 	if err := w.conn.Flush(); err != nil {
-		log.Trace(err)
+		logging.Trace(err)
 	}
 	w.Abort()
 	<-w.readDone
@@ -237,7 +237,7 @@ func (w *Writer) Abort() {
 	w.Close()
 	w.closeOnce.Do(func() {
 		if err := w.conn.Close(); err != nil {
-			log.Trace(err)
+			logging.Trace(err)
 		}
 	})
 }

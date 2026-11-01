@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/nextpkg/goav/amf"
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 )
 
 // 构造命令消息
@@ -43,11 +43,11 @@ func (s *ConnServer) sendMsg(cs *ChunkStream, args ...interface{}) error {
 	// 使用AMF0编码
 	err := amf.NewEnDecAMF0().EncodeBatch(command, args...)
 	if err != nil {
-		return errors.Wrap(err, "amf0 batch encode failed")
+		return errutil.Wrap(err, "amf0 batch encode failed")
 	}
 
 	if command.Len() == 0 {
-		return errors.New("args are useless")
+		return errutil.New("args are useless")
 	}
 
 	msg := command.Bytes()
@@ -58,7 +58,7 @@ func (s *ConnServer) sendMsg(cs *ChunkStream, args ...interface{}) error {
 
 	err = s.conn.Write(cs)
 	if err != nil {
-		return errors.Wrap(err, "write message failed")
+		return errutil.Wrap(err, "write message failed")
 	}
 
 	return s.conn.Flush()

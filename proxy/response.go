@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 )
 
@@ -108,7 +108,7 @@ func (writer *responseWriter) Flush() { _ = writer.FlushError() }
 
 func (writer *responseWriter) fail(err error) {
 	if writer.ctx.Err() == nil {
-		log.Warn("proxy response failed: ", err)
+		logging.Warn("proxy response failed: ", err)
 	}
 	writer.abort()
 }
@@ -130,7 +130,7 @@ func (server *Server) finishResponse(writer *responseWriter) {
 	writer.finished = true
 	if !writer.stopped && writer.controlled {
 		if err := writer.controller.SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
-			log.Error("proxy clear response write deadline: ", err)
+			logging.Error("proxy clear response write deadline: ", err)
 		}
 	}
 	writer.mutex.Unlock()

@@ -1,6 +1,6 @@
 package core
 
-import log "github.com/nextpkg/streamd/internal/logging"
+import "github.com/nextpkg/streamd/internal/logging"
 
 const maxAllocSize = 256 * 1024
 const minAllocSize = maxAllocSize / 4
@@ -40,7 +40,7 @@ func NewSlab() *Slab {
 // Init 设置分配内存的大小（如需使用，需在Get()被调用前执行）
 func (s *Slab) Init(min, max int) {
 	if min > max {
-		log.Error("min>max")
+		logging.Error("min>max")
 	}
 
 	if max <= 0 {

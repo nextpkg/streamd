@@ -6,7 +6,7 @@ import (
 	"net"
 	"testing"
 
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -105,7 +105,7 @@ func TestCrossReading(t *testing.T) {
 	at.Equal(8, int(cs.typeID))
 
 	err = conn.Read(&cs)
-	at.Equal(io.EOF, errors.Cause(err))
+	at.Equal(io.EOF, errutil.Cause(err))
 }
 
 func TestSetChunksizeForWrite(t *testing.T) {
@@ -252,7 +252,7 @@ func TestSetChunksize(t *testing.T) {
 
 	// 最后什么都没有了
 	err = conn.Read(cs)
-	at.Equal(io.EOF, errors.Cause(err))
+	at.Equal(io.EOF, errutil.Cause(err))
 }
 
 func TestWrite(t *testing.T) {

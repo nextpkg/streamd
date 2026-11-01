@@ -5,7 +5,7 @@ import (
 
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/internal/appstate"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 const maxFinalizingRecordings = 3
@@ -43,7 +43,7 @@ func (writer *switchingWriter) retire() bool {
 		if failed {
 			terminal.After()
 		} else if err := terminal.Finish(); err != nil {
-			log.Errorf("[%s]recording configuration finalization: %s", info.Key, err)
+			logging.Errorf("[%s]recording configuration finalization: %s", info.Key, err)
 			appstate.ReportBackgroundFailure("recording", info.Key, info.UID)
 		}
 	}()

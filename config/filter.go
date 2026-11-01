@@ -3,7 +3,7 @@ package config
 import (
 	"net/url"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // filter 字符串过滤器
@@ -23,7 +23,7 @@ Loop:
 			}
 
 			if reject(value) {
-				log.Tracef("ignore string='%s'", value)
+				logging.Tracef("ignore string='%s'", value)
 				continue Loop
 			}
 		}
@@ -45,7 +45,7 @@ func isEmpty(s string) bool {
 func isRTMP(s string) bool {
 	u, err := url.Parse(s)
 	if err != nil {
-		log.Debug(err)
+		logging.Debug(err)
 		return false
 	}
 
@@ -65,7 +65,7 @@ func isNotRTMP(s string) bool {
 func isHTTP(s string) bool {
 	u, err := url.Parse(s)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 		return false
 	}
 

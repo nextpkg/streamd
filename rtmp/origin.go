@@ -7,7 +7,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/rtmp/core"
 )
 
@@ -109,7 +109,7 @@ func (connection *Conn) captureOrigin(info *base.Info, cfg *config.Config, fligh
 		cancel()
 		if err != nil {
 			candidate.usable, candidate.deadTime = false, time.Now().Unix()
-			log.Debugf("[%s]origin failed: %v", info.Key, err)
+			logging.Debugf("[%s]origin failed: %v", info.Key, err)
 			continue
 		}
 		candidate.usable = true
@@ -166,7 +166,7 @@ func (connection *Conn) attachOrigin(info *base.Info, reader base.ReadCloser, fl
 	}
 	connection.stream.Store(info.Key, stream)
 	lock.Unlock()
-	log.Infof("[%s]Origin attached from %s", info.Key, address)
+	logging.Infof("[%s]Origin attached from %s", info.Key, address)
 	for _, player := range connection.players {
 		if player == nil {
 			continue
@@ -175,7 +175,7 @@ func (connection *Conn) attachOrigin(info *base.Info, reader base.ReadCloser, fl
 		internal.IsExternal = false
 		writer, err := player.GetWriter(internal, reader.GetConnect())
 		if err != nil {
-			log.Errorf("[%s]origin embedded player: %v", info.Key, err)
+			logging.Errorf("[%s]origin embedded player: %v", info.Key, err)
 			continue
 		}
 		if writer != nil {

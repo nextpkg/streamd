@@ -20,7 +20,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/internal/appstate"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 	"go.yaml.in/yaml/v3"
 )
@@ -190,7 +190,7 @@ func (manager *Manager) Reload() error {
 	base.SetReadTimeout(time.Duration(candidate.RTMP.ReadTimeout) * time.Second)
 	var level slog.Level
 	_ = level.UnmarshalText([]byte(candidate.LogLevel))
-	log.Level.Set(level)
+	logging.Level.Set(level)
 	manager.version.Add(1)
 	manager.fingerprint = fingerprint
 	if manager.OnCommit != nil {
@@ -232,13 +232,13 @@ func (manager *Manager) Watch(ctx context.Context) error {
 			if !ok {
 				return errors.New("configuration watcher errors closed")
 			}
-			log.Error("configuration watcher: ", err)
+			logging.Error("configuration watcher: ", err)
 		case <-debounce:
 			debounce = nil
 			if err := manager.Reload(); err != nil {
-				log.Error("configuration reload rejected: ", err)
+				logging.Error("configuration reload rejected: ", err)
 			} else {
-				log.Infof("configuration version %d committed", manager.Version())
+				logging.Infof("configuration version %d committed", manager.Version())
 			}
 		}
 	}

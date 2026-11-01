@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/nextpkg/goav/amf"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // 客户端向服务器发送 publish 命令用来发布带有名字的流。
@@ -24,7 +24,7 @@ func (s *ConnServer) handlePublish(args []interface{}) error {
 
 				// 发布流的名称
 				s.publish.Name = v
-				log.Trace("publish name is ", s.publish.Name)
+				logging.Trace("publish name is ", s.publish.Name)
 			case 3:
 				// 保存客户端声明的发布类型；录制行为由应用的 recorder 配置控制。
 				switch v {
@@ -58,12 +58,12 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 				switch {
 				case start <= -2:
 					// 当前仅记录该 start 值，不执行直播转录播查找。
-					log.Tracef("unrealized start=%d", start)
+					logging.Tracef("unrealized start=%d", start)
 				case start == -1, start == 0:
 					// 使用直播播放路径。
 				case start > 0:
 					// 当前仅记录该 start 值，不执行录播定位。
-					log.Tracef("unrealized start=%d", start)
+					logging.Tracef("unrealized start=%d", start)
 				}
 			case 4:
 				// duration: 一个可选的参数，它指定了回放的持续时间以秒为单位
@@ -74,10 +74,10 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 					// 不设置播放时长限制。
 				case duration == 0:
 					// 当前仅记录零时长请求，不执行单帧播放。
-					log.Tracef("unrealized duration=%d", duration)
+					logging.Tracef("unrealized duration=%d", duration)
 				case duration > 0:
 					// 当前仅记录指定时长，不按 duration 截断播放。
-					log.Tracef("unrealized duration=%d", duration)
+					logging.Tracef("unrealized duration=%d", duration)
 				}
 			}
 		case amf.Object:
@@ -86,7 +86,7 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 			s.publish.Name = v
 		case bool:
 			// 一个可选的布尔值或布尔数字，指定示是否刷新之前的播放列表
-			log.Tracef("unrealized play:reset")
+			logging.Tracef("unrealized play:reset")
 		}
 	}
 
@@ -123,7 +123,7 @@ func (s *ConnServer) handleCreateStream(args []interface{}) error {
 		case amf.Object:
 
 			// 客户端自定义命令对象，当前仅记录日志。
-			log.Trace("unrealized object")
+			logging.Trace("unrealized object")
 		}
 	}
 
@@ -221,7 +221,7 @@ func (s *ConnServer) handleConnect(args []interface{}) error {
 			}
 
 			// 用户可选参数，当前仅记录日志。
-			log.Tracef("unrealized optional user object")
+			logging.Tracef("unrealized optional user object")
 		}
 	}
 

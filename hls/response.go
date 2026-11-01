@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 const responseWriteWindow = 10 * time.Second
@@ -95,7 +95,7 @@ func (writer *responseWriter) finish() {
 	writer.finished = true
 	if !writer.stopped && writer.controlled {
 		if err := writer.controller.SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
-			log.Error("HLS clear response write deadline: ", err)
+			logging.Error("HLS clear response write deadline: ", err)
 		}
 	}
 	writer.mutex.Unlock()

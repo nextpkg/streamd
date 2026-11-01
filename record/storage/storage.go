@@ -9,8 +9,8 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/internal/mediatime"
 	"github.com/nextpkg/streamd/metrics"
 	"github.com/nextpkg/streamd/record/storage/driver"
@@ -59,7 +59,7 @@ func NewStorage(info *base.Info, cfg *config.AppRecorder, event *Event) *Storage
 
 	var err error
 	if !base.ValidAppName(info.App) || !base.ValidStreamName(info.Instance) || info.Key != info.App+"/"+info.Instance || !filepath.IsLocal(info.Key) {
-		err = errors.New("invalid recording stream path")
+		err = errutil.New("invalid recording stream path")
 	}
 
 	return &Storage{
@@ -178,7 +178,7 @@ func (s *Storage) open() error {
 	case config.DriverCos:
 		client := s.cfg.CosClient()
 		if client == nil {
-			return errors.New("cos client is uninitialized")
+			return errutil.New("cos client is uninitialized")
 		}
 
 		path = s.cfg.CosCfg.Path + s.fullRela
@@ -186,20 +186,20 @@ func (s *Storage) open() error {
 	case config.DriverAws:
 		client := s.cfg.AwsClient()
 		if client == nil {
-			return errors.New("aws client is uninitialized")
+			return errutil.New("aws client is uninitialized")
 		}
 
 		path = s.cfg.AwsCfg.Path + s.fullRela
 		s.dr = aws.NewDriver(client, path, s.cfg.Segment, s.cfg.AwsCfg.Bucket, s.append)
 	default:
-		return errors.New("unknown driver")
+		return errutil.New("unknown driver")
 	}
 
-	log.Tracef("open=%s,driver=%s", path, s.cfg.Driver)
+	logging.Tracef("open=%s,driver=%s", path, s.cfg.Driver)
 
 	err := s.dr.Open()
 	if err != nil {
-		return errors.Wrap(err, "open failed")
+		return errutil.Wrap(err, "open failed")
 	}
 
 	s.event.OnRecord(s.fullRela)
@@ -223,11 +223,11 @@ func (s *Storage) Close(block bool) (result error) {
 	metrics.Counter(s.info.App, s.info.Instance, metrics.RecordingTime, float64(time.Now().Unix()-s.cTime.Unix()))
 	metrics.Counter(s.info.App, s.info.Instance, metrics.RecordingSize, float64(s.size))
 
-	log.Tracef("close=%s,driver=%s", s.fullRela, s.cfg.Driver)
+	logging.Tracef("close=%s,driver=%s", s.fullRela, s.cfg.Driver)
 	complete := !s.resumeFailed
 	if s.cfg.Driver == config.DriverCos || s.cfg.Driver == config.DriverAws {
 		if s.cfg.SaveMode == config.ModeRound && !s.CanSplit() && !s.forceComplete {
-			log.Debugf("prevent to complete task(%s) because of non-splittable round mode,driver=%s",
+			logging.Debugf("prevent to complete task(%s) because of non-splittable round mode,driver=%s",
 				s.fullRela, s.cfg.Driver)
 			complete = false
 		}
@@ -241,7 +241,7 @@ func (s *Storage) Close(block bool) (result error) {
 		s.lastError = result
 	}
 	if block {
-		result = errors.Join(result, s.reapFinalizations(true))
+		result = errutil.Join(result, s.reapFinalizations(true))
 	}
 	return result
 }
@@ -294,7 +294,7 @@ func (store *Storage) Resume(initialize func(io.ReaderAt, int64) (uint32, error)
 				return 0, err
 			}
 			if state.Format != store.cfg.SaveAs || len(restart) == 0 {
-				return 0, errors.New("recording media checkpoint cannot be applied to this format")
+				return 0, errutil.New("recording media checkpoint cannot be applied to this format")
 			}
 			return restart[0](uint32(state.Next))
 		}

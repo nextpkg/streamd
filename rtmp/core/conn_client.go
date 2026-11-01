@@ -11,12 +11,12 @@ import (
 
 	"github.com/nextpkg/goav/amf"
 	"github.com/nextpkg/streamd/base"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // ErrRspFailed 响应数据格式错误
-var ErrRspFailed = errors.New("invalid server response data")
+var ErrRspFailed = errutil.New("invalid server response data")
 
 // ConnClient RTMP客户端
 type ConnClient struct {
@@ -32,7 +32,7 @@ type ConnClient struct {
 func NewConnClientByURL(rtmpURL string, timeout time.Duration) *ConnClient {
 	client, err := newConnClientByURL(context.Background(), rtmpURL, timeout)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 		return nil
 	}
 	return client
@@ -55,7 +55,7 @@ func newConnClientByURL(ctx context.Context, rtmpURL string, timeout time.Durati
 func dialConnClient(ctx context.Context, rtmpURL string, timeout time.Duration, options ClientOptions) (*ConnClient, error) {
 	u, err := url.Parse(rtmpURL)
 	if err != nil || len(u.Host) == 0 || u.Scheme != "rtmp" {
-		return nil, errors.New("invalid rtmp url,host or protocol")
+		return nil, errutil.New("invalid rtmp url,host or protocol")
 	}
 
 	address := u.Host
@@ -66,13 +66,13 @@ func dialConnClient(ctx context.Context, rtmpURL string, timeout time.Duration, 
 	// path
 	ps := strings.Split(strings.TrimLeft(u.Path, "/"), "/")
 	if len(ps) != 2 || ps[0] == "" || ps[1] == "" {
-		return nil, errors.New("invalid rtmp path")
+		return nil, errutil.New("invalid rtmp path")
 	}
 
 	dialer := net.Dialer{Timeout: timeout}
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Dial rtmp server failed,host='%s'", address)
+		return nil, errutil.Wrapf(err, "Dial rtmp server failed,host='%s'", address)
 	}
 
 	bufferSize := options.BufferSize
@@ -124,7 +124,7 @@ func (c *ConnClient) Write(cs *ChunkStream) error {
 	// 接收到chunk后，对metadata进行整理
 	err := cs.unpack()
 	if err != nil {
-		return errors.Wrap(err, "unpack and get data failed")
+		return errutil.Wrap(err, "unpack and get data failed")
 	}
 
 	return c.conn.Write(cs)
@@ -152,33 +152,33 @@ func (c *ConnClient) Start(method string) error {
 	// 1. 握手
 	err := c.conn.HandshakeClient()
 	if err != nil {
-		return errors.Wrap(err, "client handshake to server")
+		return errutil.Wrap(err, "client handshake to server")
 	}
 
 	// 2. 交互 Connect
 	err = c.Connect()
 	if err != nil {
-		return errors.Wrap(err, "client send CONNECT command to server")
+		return errutil.Wrap(err, "client send CONNECT command to server")
 	}
 
 	// 3. 交互 CreateStream
 	err = c.CreateStream()
 	if err != nil {
-		return errors.Wrap(err, "client send CREATE_STREAM command to server")
+		return errutil.Wrap(err, "client send CREATE_STREAM command to server")
 	}
 
 	// 4. 开始 Play 或者 Publish
 	switch method {
 	case Publish:
 		if err := c.Publish(); err != nil {
-			return errors.Wrap(err, "client send PUBLISH command to server")
+			return errutil.Wrap(err, "client send PUBLISH command to server")
 		}
 	case Play:
 		if err := c.Play(); err != nil {
-			return errors.Wrap(err, "client send PLAY command to server")
+			return errutil.Wrap(err, "client send PLAY command to server")
 		}
 	default:
-		return errors.New("unknown method")
+		return errutil.New("unknown method")
 	}
 
 	return nil
@@ -206,21 +206,21 @@ func (c *ConnClient) Connect() error {
 	event["tcUrl"] = c.connect.TcURL
 
 	// ready to request
-	log.Trace("Connect chunk size before sending is ", c.conn.chunkSize)
+	logging.Trace("Connect chunk size before sending is ", c.conn.chunkSize)
 
 	err := c.sendCmdMsg(Connect, c.transactionID, event)
 	if err != nil {
-		return errors.Wrapf(err, "sendCmdMsg,transaction id=%d,app='%s',tcUrl='%s'",
+		return errutil.Wrapf(err, "sendCmdMsg,transaction id=%d,app='%s',tcUrl='%s'",
 			c.transactionID, c.connect.App, c.connect.TcURL)
 	}
 
 	err = c.recvCmdMsg()
 	if err != nil {
-		return errors.Wrapf(err, "recvCmdMsg,transaction id=%d,app='%s',tcUrl='%s'",
+		return errutil.Wrapf(err, "recvCmdMsg,transaction id=%d,app='%s',tcUrl='%s'",
 			c.transactionID, c.connect.App, c.connect.TcURL)
 	}
 
-	log.Trace("Connect chunk size after sending is ", c.conn.chunkSize)
+	logging.Trace("Connect chunk size after sending is ", c.conn.chunkSize)
 
 	return nil
 }
@@ -233,12 +233,12 @@ func (c *ConnClient) CreateStream() error {
 	// 格式: <command name>,<transaction id>,<command object>
 	err := c.sendCmdMsg(CreateStream, c.transactionID, nil)
 	if err != nil {
-		return errors.Wrapf(err, "sendCmdMsg,transaction id=%d", c.transactionID)
+		return errutil.Wrapf(err, "sendCmdMsg,transaction id=%d", c.transactionID)
 	}
 
 	err = c.recvCmdMsg()
 	if err != nil {
-		return errors.Wrapf(err, "recvCmdMsg,transaction id=%d", c.transactionID)
+		return errutil.Wrapf(err, "recvCmdMsg,transaction id=%d", c.transactionID)
 	}
 
 	return nil
@@ -252,12 +252,12 @@ func (c *ConnClient) Publish() error {
 	// 格式: <command name>,<transaction ID>,<command object>,<publishing name>,<publishing type>
 	err := c.sendCmdMsg(Publish, 0, nil, c.publish.Name, publishLive)
 	if err != nil {
-		return errors.Wrapf(err, "sendCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
+		return errutil.Wrapf(err, "sendCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
 	}
 
 	err = c.recvCmdMsg()
 	if err != nil {
-		return errors.Wrapf(err, "recvCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
+		return errutil.Wrapf(err, "recvCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
 	}
 
 	return nil
@@ -272,12 +272,12 @@ func (c *ConnClient) Play() error {
 	// <stream name>,<Start(可选) float>,<Duration(可选) float>,<Reset(可选) bool>
 	err := c.sendCmdMsg(Play, 0, nil, c.publish.Name)
 	if err != nil {
-		return errors.Wrapf(err, "sendCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
+		return errutil.Wrapf(err, "sendCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
 	}
 
 	err = c.recvCmdMsg()
 	if err != nil {
-		return errors.Wrapf(err, "recvCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
+		return errutil.Wrapf(err, "recvCmdMsg,transaction id=%d,instance='%s'", c.transactionID, c.publish.Name)
 	}
 
 	return nil
@@ -381,12 +381,12 @@ func (c *ConnClient) recvCmdMsg() error {
 		case 20:
 			cmd, err = amf.NewEnDecAMF0().DecodeBatch(bytes.NewReader(cs.data))
 			if err != nil {
-				return errors.Wrap(err, "decode amf0")
+				return errutil.Wrap(err, "decode amf0")
 			}
 		case 17:
 			cmd, err = amf.NewEnDecAMF3().DecodeBatch(bytes.NewReader(cs.data))
 			if err != nil {
-				return errors.Wrap(err, "decode amf3")
+				return errutil.Wrap(err, "decode amf3")
 			}
 		default:
 			continue
@@ -396,15 +396,15 @@ func (c *ConnClient) recvCmdMsg() error {
 			switch v.(type) {
 			case string:
 				if err := c.strCmd(v); err != nil {
-					return errors.Wrap(err, "handle str command")
+					return errutil.Wrap(err, "handle str command")
 				}
 			case float64:
 				if err := c.intCmd(k, v); err != nil {
-					return errors.Wrap(err, "handle int command")
+					return errutil.Wrap(err, "handle int command")
 				}
 			case amf.Object:
 				if err := c.objCmd(v); err != nil {
-					return errors.Wrap(err, "handle obj command")
+					return errutil.Wrap(err, "handle obj command")
 				}
 			}
 		}
@@ -420,7 +420,7 @@ func (c *ConnClient) sendCmdMsg(args ...interface{}) error {
 	// 使用AMF0编码
 	err := amf.NewEnDecAMF0().EncodeBatch(command, args...)
 	if err != nil {
-		return errors.Wrap(err, "encode command message")
+		return errutil.Wrap(err, "encode command message")
 	}
 
 	msg := command.Bytes()
@@ -437,7 +437,7 @@ func (c *ConnClient) sendCmdMsg(args ...interface{}) error {
 	}
 
 	if err := c.conn.Write(cs); err != nil {
-		return errors.Wrap(err, "send command message to server")
+		return errutil.Wrap(err, "send command message to server")
 	}
 
 	return c.conn.Flush()

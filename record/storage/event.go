@@ -7,7 +7,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/internal/httpx"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // EventFunc 事件函数类型
@@ -45,12 +45,12 @@ func FireEvent(eventName, eventURL, eventKey string, conn *base.ConnectInfo) Eve
 			"connInfo": conn,
 		})
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 			return
 		}
 
 		report := func(failure error) {
-			log.Errorf("[%s]err=%s,event=%s", eventKey, failure, eventName)
+			logging.Errorf("[%s]err=%s,event=%s", eventKey, failure, eventName)
 		}
 		if err := httpx.SubmitJSON(eventURL, data, report); err != nil {
 			report(err)

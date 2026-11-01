@@ -5,11 +5,11 @@ import (
 
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/internal/appstate"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
-var ErrFinalizationPending = errors.New("recording is waiting for prior segment finalization")
+var ErrFinalizationPending = errutil.New("recording is waiting for prior segment finalization")
 
 type FinalizationBudget struct {
 	mu     sync.Mutex
@@ -47,7 +47,7 @@ func (store *Storage) SetFinalizationBudget(budget *FinalizationBudget) {
 }
 
 func (store *Storage) WaitingFinalization() bool {
-	return store != nil && errors.Is(store.lastError, ErrFinalizationPending)
+	return store != nil && errutil.Is(store.lastError, ErrFinalizationPending)
 }
 
 func (store *Storage) reserveCloudRecording() error {
@@ -65,7 +65,7 @@ func (store *Storage) reserveCloudRecording() error {
 		return nil
 	}
 	if key == "" {
-		return errors.New("cloud recording settings are missing")
+		return errutil.New("cloud recording settings are missing")
 	}
 	releaseSlot, err := store.finalizationBudget.reserve(key)
 	if err != nil {
@@ -101,9 +101,9 @@ func (store *Storage) finalizeSegment(complete, block bool, prior error) error {
 	release := store.releaseDriver
 	store.releaseDriver = nil
 	finish := func() error {
-		err := errors.Join(prior, driver.Close(complete, true))
+		err := errutil.Join(prior, driver.Close(complete, true))
 		if err != nil {
-			return errors.Wrapf(err, "close failed,sync=%t,block=%t", complete, block)
+			return errutil.Wrapf(err, "close failed,sync=%t,block=%t", complete, block)
 		}
 		if complete {
 			completed(location)
@@ -129,7 +129,7 @@ func (store *Storage) finalizeSegment(complete, block bool, prior error) error {
 		}
 		segment.failure = finish()
 		if segment.failure != nil {
-			log.Errorf("[%s]recording segment finalization: %s", key, segment.failure)
+			logging.Errorf("[%s]recording segment finalization: %s", key, segment.failure)
 			appstate.ReportBackgroundFailure("recording", key, owner)
 		}
 	}()

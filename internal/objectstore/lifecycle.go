@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 func (client *Client) Retain() func() {
@@ -53,7 +53,7 @@ func (client *Client) freshClient() *Client {
 	}
 	next, err := client.renew()
 	if err != nil {
-		log.Warnf("recording client refresh failed; using retained client: %v", err)
+		logging.Warnf("recording client refresh failed; using retained client: %v", err)
 		return client
 	}
 	return next

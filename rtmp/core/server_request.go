@@ -6,8 +6,8 @@ import (
 
 	"github.com/nextpkg/goav/amf"
 	"github.com/nextpkg/streamd/base"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 func (s *ConnServer) connectMsg(cs *ChunkStream, cmd []interface{}) error {
@@ -17,23 +17,23 @@ func (s *ConnServer) connectMsg(cs *ChunkStream, cmd []interface{}) error {
 	}
 	properties, ok := cmd[2].(amf.Object)
 	if !ok {
-		return errors.New("invalid connect command object")
+		return errutil.New("invalid connect command object")
 	}
 	app, ok := properties["app"].(string)
 	if !ok || !base.ValidAppName(app) {
-		return errors.New("invalid application name")
+		return errutil.New("invalid application name")
 	}
 
 	// 解析命令
 	err := s.handleConnect(cmd[1:])
 	if err != nil {
-		return errors.Wrap(err, "parse connect command failed")
+		return errutil.Wrap(err, "parse connect command failed")
 	}
 
 	// 响应
 	err = s.rspConnect(cs)
 	if err != nil {
-		return errors.Wrap(err, "response connect command failed")
+		return errutil.Wrap(err, "response connect command failed")
 	}
 
 	s.method = Connect
@@ -49,13 +49,13 @@ func (s *ConnServer) createStreamMsg(cs *ChunkStream, cmd []interface{}) error {
 	// 解析命令
 	err := s.handleCreateStream(cmd[1:])
 	if err != nil {
-		return errors.Wrap(err, "parse 'CreateStream' failed")
+		return errutil.Wrap(err, "parse 'CreateStream' failed")
 	}
 
 	// 响应
 	err = s.rspCreateStream(cs)
 	if err != nil {
-		return errors.Wrap(err, "response createStream command failed")
+		return errutil.Wrap(err, "response createStream command failed")
 	}
 
 	s.method = CreateStream
@@ -69,19 +69,19 @@ func (s *ConnServer) publishMsg(cs *ChunkStream, cmd []interface{}) error {
 	}
 	name, ok := cmd[3].(string)
 	if !ok || !base.ValidStreamName(name) {
-		return errors.New("invalid publish stream name")
+		return errutil.New("invalid publish stream name")
 	}
 
 	// 解析命令
 	err := s.handlePublish(cmd[1:])
 	if err != nil {
-		return errors.Wrap(err, "parse publish command failed")
+		return errutil.Wrap(err, "parse publish command failed")
 	}
 
 	// 响应
 	err = s.rspPublish(cs)
 	if err != nil {
-		return errors.Wrap(err, "response publish command failed")
+		return errutil.Wrap(err, "response publish command failed")
 	}
 
 	s.done = true
@@ -97,20 +97,20 @@ func (s *ConnServer) playMsg(cs *ChunkStream, cmd []interface{}) error {
 	}
 	name, ok := cmd[3].(string)
 	if !ok || !base.ValidStreamName(name) {
-		return errors.New("invalid play stream name")
+		return errutil.New("invalid play stream name")
 	}
 
 	// 解析命令
 	err := s.handlePlay(cmd[1:])
 	if err != nil {
-		return errors.Wrap(err, "parse play command failed")
+		return errutil.Wrap(err, "parse play command failed")
 	}
 	s.publish.Name = name
 
 	// 响应
 	err = s.rspPlay(cs)
 	if err != nil {
-		return errors.Wrap(err, "response play command failed")
+		return errutil.Wrap(err, "response play command failed")
 	}
 
 	s.done = true
@@ -128,12 +128,12 @@ func (s *ConnServer) getStreamLengthMsg(cs *ChunkStream, cmd []interface{}) erro
 	// 直播流不需要获取长度
 	err := s.handleGetStreamLength(cmd[1:])
 	if err != nil {
-		return errors.Wrap(err, "get stream length failed")
+		return errutil.Wrap(err, "get stream length failed")
 	}
 
 	err = s.rspGetStreamLength(cs)
 	if err != nil {
-		return errors.Wrap(err, "response getStreamLength command failed")
+		return errutil.Wrap(err, "response getStreamLength command failed")
 	}
 
 	s.method = GetStreamLength
@@ -144,12 +144,12 @@ func (s *ConnServer) getStreamLengthMsg(cs *ChunkStream, cmd []interface{}) erro
 func (s *ConnServer) deleteStreamMsg(cmd []interface{}) error {
 
 	if len(cmd) <= 1 {
-		return errors.New("incomplete deleteStream command")
+		return errutil.New("incomplete deleteStream command")
 	}
 
 	err := s.handleDeleteStream(cmd[4:])
 	if err != nil {
-		return errors.Wrap(err, "parse deleteStream command failed")
+		return errutil.Wrap(err, "parse deleteStream command failed")
 	}
 
 	s.streamID = 0
@@ -166,7 +166,7 @@ func (s *ConnServer) fcUnPublishMsg(cmd []interface{}) error {
 
 	err := s.handleFcunpublish(cmd[1:])
 	if err != nil {
-		return errors.Wrap(err, "parse FCUnpublish command failed")
+		return errutil.Wrap(err, "parse FCUnpublish command failed")
 	}
 
 	// 清空发布信息，并记录 FCUnpublish 状态。
@@ -185,7 +185,7 @@ func (s *ConnServer) handleCommandMsg(cs *ChunkStream) error {
 
 		// AMF3
 		if len(cs.data) <= 1 {
-			return errors.New("incomplete chunk data")
+			return errutil.New("incomplete chunk data")
 		}
 		cs.data = cs.data[1:]
 	case 20:
@@ -196,20 +196,20 @@ func (s *ConnServer) handleCommandMsg(cs *ChunkStream) error {
 	// 按协议版本解析命令消息
 	cmd, err := amf.NewEnDecAMF0().DecodeBatch(bytes.NewReader(cs.data))
 	if err != nil {
-		return errors.Wrap(err, "amf0 batch decode failed")
+		return errutil.Wrap(err, "amf0 batch decode failed")
 	}
 
 	if len(cmd) == 0 {
-		return errors.New("empty command message")
+		return errutil.New("empty command message")
 	}
 
 	// 命令名称, 只有string类型
 	cmdName, ok := cmd[0].(string)
 	if !ok {
-		return errors.New("invalid command name format")
+		return errutil.New("invalid command name format")
 	}
 
-	log.Trace("server handle command ", cmdName)
+	logging.Trace("server handle command ", cmdName)
 
 	switch cmdName {
 	case Connect:
@@ -246,7 +246,7 @@ func (s *ConnServer) handleCommandMsg(cs *ChunkStream) error {
 	default:
 
 		// 忽略未识别的命令，保持连接。
-		log.Errorf("unrealized command message='%s'", cmdName)
+		logging.Errorf("unrealized command message='%s'", cmdName)
 		return nil
 	}
 }
@@ -261,19 +261,19 @@ func (s *ConnServer) handleDataMsg(cs *ChunkStream) error {
 	case 18:
 		cmd, err = amf.NewEnDecAMF0().DecodeBatch(bytes.NewReader(cs.data))
 		if err != nil {
-			return errors.Wrap(err, "amf0 batch decode failed")
+			return errutil.Wrap(err, "amf0 batch decode failed")
 		}
 	case 15:
 		cmd, err = amf.NewEnDecAMF3().DecodeBatch(bytes.NewReader(cs.data))
 		if err != nil {
-			return errors.Wrap(err, "amf3 batch decode failed")
+			return errutil.Wrap(err, "amf3 batch decode failed")
 		}
 	default:
 		return nil
 	}
 
 	if len(cmd) == 0 {
-		return errors.New("empty command message")
+		return errutil.New("empty command message")
 	}
 
 	// 命令名称, 只有string类型
@@ -286,12 +286,12 @@ func (s *ConnServer) handleDataMsg(cs *ChunkStream) error {
 	switch cmdName {
 	case amf.SetDataFrame:
 		if len(cmd) <= 1 {
-			return errors.New("incomplete SetDataFrame command")
+			return errutil.New("incomplete SetDataFrame command")
 		}
 
 		err = s.handleSetDataFrame(cmd[1:])
 		if err != nil {
-			return errors.Wrap(err, "set data frame failed")
+			return errutil.Wrap(err, "set data frame failed")
 		}
 	}
 
@@ -301,18 +301,18 @@ func (s *ConnServer) handleDataMsg(cs *ChunkStream) error {
 func (s *ConnServer) handleSetDataFrame(args []interface{}) error {
 	subCmd, ok := args[0].(string)
 	if !ok {
-		return errors.New("invalid sub command name format")
+		return errutil.New("invalid sub command name format")
 	}
 
 	switch subCmd {
 	case amf.OnMetaData:
 		if len(args) <= 1 {
-			return errors.New("invalid OnMetaData")
+			return errutil.New("invalid OnMetaData")
 		}
 
 		object, ok := args[1].(amf.Object)
 		if !ok {
-			return errors.New("invalid object")
+			return errutil.New("invalid object")
 		}
 
 		s.publish.MetaData = object

@@ -3,7 +3,7 @@ package core
 
 import (
 	"github.com/nextpkg/streamd/base"
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 )
 
 // ConnServer RTMP服务端
@@ -59,7 +59,7 @@ func (s *ConnServer) Write(cs *ChunkStream) error {
 	// 接收到chunk后，对metadata进行处理
 	err := cs.unpack()
 	if err != nil {
-		return errors.Wrap(err, "handle metadata failed")
+		return errutil.Wrap(err, "handle metadata failed")
 	}
 
 	return s.conn.Write(cs)
@@ -77,12 +77,12 @@ func (s *ConnServer) Read(cs *ChunkStream) error {
 		case 15, 18:
 			err = s.handleDataMsg(cs)
 			if err != nil {
-				return errors.Wrap(err, "handle data message failed")
+				return errutil.Wrap(err, "handle data message failed")
 			}
 		case 20:
 			err = s.handleCommandMsg(cs)
 			if err != nil {
-				return errors.Wrap(err, "handle command message failed")
+				return errutil.Wrap(err, "handle command message failed")
 			}
 
 			continue
@@ -117,7 +117,7 @@ func (s *ConnServer) CommandLinkup() error {
 
 		err = s.handleCommandMsg(cs)
 		if err != nil {
-			return errors.Wrap(err, "handle command message failed")
+			return errutil.Wrap(err, "handle command message failed")
 		}
 
 		// 已经publish或者play则退出循环
