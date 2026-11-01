@@ -13,7 +13,7 @@ func ValidStreamName(name string) bool {
 	if !utf8.ValidString(name) {
 		return false
 	}
-	for _, component := range strings.Split(name, "/") {
+	for component := range strings.SplitSeq(name, "/") {
 		if component == "" || component == "." || component == ".." {
 			return false
 		}

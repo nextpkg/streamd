@@ -34,7 +34,7 @@ type resourceSample struct {
 
 func parseResources(body string) (map[string]float64, error) {
 	values := map[string]float64{}
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		fields := strings.Fields(line)
 		if len(fields) != 2 {
 			continue
@@ -270,7 +270,7 @@ func (harness *harness) resourceBaseline() (result error) {
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(strings.TrimSpace(string(body)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(body)), "\n") {
 		var event struct{ Level string }
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
 			return err

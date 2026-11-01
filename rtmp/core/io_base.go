@@ -25,7 +25,7 @@ func NewReadWriter(rw io.ReadWriter, bufSize int) *ReadWriter {
 
 // Read 读数据
 func (rw *ReadWriter) Read(p []byte) (int, error) {
-	return io.ReadAtLeast(rw.Reader, p, len(p))
+	return io.ReadFull(rw.Reader, p)
 }
 
 // ReadUintBE 从已有的缓冲池中读取n字节的数据, 以大端的形式保存到uint32中

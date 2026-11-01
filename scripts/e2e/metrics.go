@@ -17,7 +17,7 @@ import (
 
 func liveMetricValues(body, cluster string, active bool) (map[string]float64, error) {
 	values := map[string]float64{}
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		if !strings.HasPrefix(line, "streamd_") {
 			continue
 		}
@@ -135,7 +135,7 @@ func (harness *harness) metricsMedia() error {
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(strings.TrimSpace(string(body)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(body)), "\n") {
 		var event struct{ Level string }
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
 			return err

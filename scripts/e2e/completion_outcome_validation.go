@@ -52,7 +52,7 @@ func validateCompletionCallbacks(observations []callbackObservation, files, clou
 		case "OnRecord", "OnRecordDone":
 			location, locationOK := payload["location"].(string)
 			connection, connectionOK := payload["connInfo"].(map[string]any)
-			app := strings.Split(key, "/")[0]
+			app, _, _ := strings.Cut(key, "/")
 			if len(payload) != 6 || !locationOK || !connectionOK || connection["app"] != app || path.Dir(location) != "/"+key || path.Ext(location) != "."+app || payload["filename"] != path.Base(location) {
 				return nil, errors.New("recording callback content mismatch")
 			}

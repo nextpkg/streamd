@@ -3,6 +3,7 @@ package rtmp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,7 +19,6 @@ import (
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/rtmp/core"
 
-	errors "github.com/nextpkg/streamd/internal/errutil"
 	"sync/atomic"
 )
 

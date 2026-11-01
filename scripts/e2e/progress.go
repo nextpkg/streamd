@@ -61,7 +61,7 @@ func decodedFrames(body string) (int, error) {
 
 func parseFrameProgress(body string) (int, error) {
 	last := 0
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		if value, exists := strings.CutPrefix(line, "frame="); exists {
 			frames, err := strconv.Atoi(strings.TrimSpace(value))
 			if err != nil || frames < 0 {
