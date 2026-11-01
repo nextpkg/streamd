@@ -1,0 +1,80 @@
+[
+  {
+    "/cpu/classes/gc/mark/assist:cpu-seconds": 0.952322831,
+    "/cpu/classes/gc/mark/idle:cpu-seconds": 0,
+    "/cpu/classes/gc/total:cpu-seconds": 0.971882996,
+    "allocated_bytes": 51200009432,
+    "allocations": 50000049,
+    "elapsed_seconds": 4.300829666,
+    "gc_cycles": 16770,
+    "heap_inuse_end": 3801088,
+    "operations": 50000000,
+    "strategy": "make",
+    "round": 1
+  },
+  {
+    "/cpu/classes/gc/mark/assist:cpu-seconds": 0.895047843,
+    "/cpu/classes/gc/mark/idle:cpu-seconds": 0,
+    "/cpu/classes/gc/total:cpu-seconds": 0.9109024689999999,
+    "allocated_bytes": 51200140488,
+    "allocations": 195361,
+    "elapsed_seconds": 1.463486875,
+    "gc_cycles": 15023,
+    "heap_inuse_end": 4489216,
+    "operations": 50000000,
+    "strategy": "slab",
+    "round": 1
+  },
+  {
+    "/cpu/classes/gc/mark/assist:cpu-seconds": 0.870312018,
+    "/cpu/classes/gc/mark/idle:cpu-seconds": 0,
+    "/cpu/classes/gc/total:cpu-seconds": 0.8858875740000001,
+    "allocated_bytes": 51200140488,
+    "allocations": 195361,
+    "elapsed_seconds": 1.4191779580000001,
+    "gc_cycles": 15023,
+    "heap_inuse_end": 4489216,
+    "operations": 50000000,
+    "strategy": "slab",
+    "round": 2
+  },
+  {
+    "/cpu/classes/gc/mark/assist:cpu-seconds": 0.991957086,
+    "/cpu/classes/gc/mark/idle:cpu-seconds": 0,
+    "/cpu/classes/gc/total:cpu-seconds": 1.013924956,
+    "allocated_bytes": 51200009432,
+    "allocations": 50000049,
+    "elapsed_seconds": 4.357987541,
+    "gc_cycles": 16785,
+    "heap_inuse_end": 3923968,
+    "operations": 50000000,
+    "strategy": "make",
+    "round": 2
+  },
+  {
+    "/cpu/classes/gc/mark/assist:cpu-seconds": 0.957792882,
+    "/cpu/classes/gc/mark/idle:cpu-seconds": 0,
+    "/cpu/classes/gc/total:cpu-seconds": 0.978877138,
+    "allocated_bytes": 51200009432,
+    "allocations": 50000049,
+    "elapsed_seconds": 4.333918709,
+    "gc_cycles": 16710,
+    "heap_inuse_end": 4251648,
+    "operations": 50000000,
+    "strategy": "make",
+    "round": 3
+  },
+  {
+    "/cpu/classes/gc/mark/assist:cpu-seconds": 0.878872607,
+    "/cpu/classes/gc/mark/idle:cpu-seconds": 0,
+    "/cpu/classes/gc/total:cpu-seconds": 0.894515967,
+    "allocated_bytes": 51200140488,
+    "allocations": 195361,
+    "elapsed_seconds": 1.4235275,
+    "gc_cycles": 15023,
+    "heap_inuse_end": 4489216,
+    "operations": 50000000,
+    "strategy": "slab",
+    "round": 3
+  }
+]

@@ -24,6 +24,22 @@ GOMAXPROCS=2 go test ./rtmp/core -run '^$' \
   -benchmem -benchtime=200ms -count=3 -cpu=1
 ```
 
+## GC 开销复核：等量工作，不把速度差全归因于 GC
+
+![相同处理量下逐包 make 与 slab 的耗时、GC CPU 估计和 GC 周期对比](images/gc-comparison.svg)
+
+2026-11-01，代码 `3b807e4`，同一 Apple M4 / Go 1.27.3 环境，以外置测量程序调用生产 slab；每策略三个独立进程，各申请 5000 万个 1KiB 包，仅保留最后一包。设置 `GOMAXPROCS=1`、`GOGC=100`、`GOMEMLIMIT=256MiB`（Go 软内存上限），计时前执行一次 GC；运行期间关闭逐次 GC 日志和 CPU profile，通过 runtime.MemStats 与 runtime/metrics 差分采样。
+
+柱高是三轮中位数，黑点是各轮结果，纵轴均从零开始；[原始数据](data/gc-comparison.json)保留每轮数值。
+
+| 指标 | 逐包 make | slab | 中位数变化 |
+| --- | ---: | ---: | ---: |
+| 总耗时 | 4.334 秒 | 1.424 秒 | −67.2% |
+| GC CPU 估计值 | 0.979 CPU 秒 | 0.895 CPU 秒 | −8.6% |
+| GC 周期 | 16,770 | 15,023 | −10.4% |
+
+两者累计申请字节均约 51.20GB，但分配次数约从 5000 万降到 19.5 万；总耗时差远大于 GC CPU 估计差，不能把主要加速归因于 GC。GC CPU 是运行时估计值，不能直接等同于操作系统 CPU 计时；本实验未模拟真实媒体持有时间，也不是服务吞吐 A/B。它补充了前面的分配微基准，测试方法不同，不能混用两张表的耗时。
+
 ## 1C2G 的受限容量对照
 
 以下为 2026-10-31 对 `75351b018ad16af796fcae2e377c26699a18ffc0` 的已有实测，不是本次文档提交重新跑的容量测试。环境是本机 ARM64 Linux 容器：服务单独限制 1 CPU / 2GiB，客户端另限 1 CPU / 768MiB；不是云服务器实测。
