@@ -137,7 +137,7 @@ func (s *Stream) After() {
 	s.setActive(false)
 	s.flush()
 
-	// 总m3u8长度，等待最后一个用户播放完
+	// 标记列表结束，并按最近生成列表的时长保留切片；Close 可提前结束等待。
 	s.m3u8.MarkEnd()
 	timer := time.NewTimer(s.m3u8.Duration())
 	defer timer.Stop()

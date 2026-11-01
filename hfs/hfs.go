@@ -32,13 +32,6 @@ func (s *Server) Init(r *http.ServeMux) *http.ServeMux {
 // handleConn HFS handler
 func (s *Server) handleConn(w http.ResponseWriter, r *http.Request) {
 	// ===============================
-	// 设置响应头
-	// ===============================
-	// 设置为允许跨域
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
-	// ===============================
-
-	// ===============================
 	// 根据请求, 申请播放流
 	// ===============================
 	filename := r.PathValue("file")

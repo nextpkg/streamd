@@ -2,8 +2,8 @@ package packet
 
 // FLV Tag
 const (
-	TagAudio          = 8   // Tag：视频
-	TagVideo          = 9   // Tag：音频
+	TagAudio          = 8   // Tag：音频
+	TagVideo          = 9   // Tag：视频
 	TagScriptDataAMF0 = 18  // Tag：AMF0格式的元数据
 	TagScriptDataAMF3 = 0xf // Tag：AMF3格式的元数据
 )
@@ -15,11 +15,11 @@ const (
 	PktMetadata        // 元数据包
 )
 
-// Packet Header can be converted to AudioHeaderInfo or VideoHeaderInfo
+// Packet 保存媒体类型、时间戳以及 FLV 标签头和载荷。
 type Packet struct {
 	Type      int    // 音频, 视频, 元数据, 其它
-	TimeStamp uint32 // dts, 增量, 毫秒
-	Baseline  uint32 // 增量，毫秒
+	TimeStamp uint32 // 输入解码时间戳（DTS），毫秒
+	Baseline  uint32 // 重定位后的输出 DTS，毫秒
 	StreamID  uint32 // 流ID
 	Header    Header // FLV头
 	Data      []byte // 封装了flv tag的数据包

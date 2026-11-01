@@ -85,7 +85,7 @@ func NewDynamicRelay(pullURL string, pushURL string, dialTimeout time.Duration) 
 	}
 }
 
-// RenewConnection 重新建立连接
+// RenewConnection 停止当前会话并等待退出；后续 Start 重新建立连接。
 func (relay *DynamicRelay) RenewConnection() {
 	relay.mu.Lock()
 	session := relay.session
@@ -207,7 +207,7 @@ func (relay *DynamicRelay) StartContext(startupContext context.Context) (result 
 	return nil
 }
 
-// IsDone 转播服务是否在工作
+// IsDone 判断当前转播会话是否已结束；尚未启动时也返回 true。
 func (relay *DynamicRelay) IsDone() bool {
 	select {
 	case <-relay.Wait():
@@ -217,7 +217,7 @@ func (relay *DynamicRelay) IsDone() bool {
 	}
 }
 
-// Wait 等待服务完成
+// Wait 返回当前会话的完成通道。
 func (relay *DynamicRelay) Wait() <-chan struct{} {
 	relay.mu.Lock()
 	defer relay.mu.Unlock()
@@ -227,7 +227,7 @@ func (relay *DynamicRelay) Wait() <-chan struct{} {
 	return relay.session.done
 }
 
-// Stop 暂停转播
+// Stop 取消当前转播会话并关闭连接。
 func (relay *DynamicRelay) Stop() {
 	relay.mu.Lock()
 	session := relay.session

@@ -22,7 +22,7 @@ func SetSlabOverrides(minimum, maximum int) error {
 // RTMP RTMP直播功能
 type RTMP struct {
 	Addr string `json:"addr"`
-	// Gop group of picture, 指关键帧间隔。最小值为0，但如果gop=0，用户读取的开头的数据可能是不完整的，解析时可能会发生错误
+	// Gop 缓存的 GOP 数量；0 表示不缓存 GOP，新订阅者需等待后续关键帧。
 	Gop         int    `json:"gop"`
 	ChunkSize   uint32 `json:"chunk_size"`   // RTMP协议的chunk大小，单位：字节，0表示使用默认值
 	SlabMin     int    `json:"slab_min"`     // 内存分配器的碎片最小值，0表示使用默认值

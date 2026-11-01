@@ -121,7 +121,7 @@ func (m *muxer) mux(p *packet.Packet, pts uint32, w io.Writer) error {
 	dataLen := uint32(len(p.Data))
 
 	/* 1字节, [0:1]Reserved, [2]Filter(unencrypted), [3:7]TagType */
-	/* 3字节, DataSize, 其中包含2字节的media header */
+	/* 3字节 DataSize，包含对应媒体格式的头部和载荷 */
 	binary.BigEndian.PutUint32(m.tagHdr[0:4], typeID<<24+dataLen&0x00ffffff)
 
 	/* 音频/视频时间戳(dts + baseline) */

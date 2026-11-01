@@ -23,7 +23,7 @@ type Server struct {
 	responseTimeout time.Duration
 }
 
-// Init 启动HLS服务器(使用RTMP Relay提供数据源)
+// Init 注册 HLS 播放列表和 TS 切片的 HTTP 路由。
 func (s *Server) Init(r *http.ServeMux) *http.ServeMux {
 	r.HandleFunc("GET /hls/{app}/{file}", s.handleM3U8)
 	r.HandleFunc("GET /hls/{app}/{ins}/{file}", s.handleTS)
@@ -69,7 +69,7 @@ func (s *Server) Close() {
 	log.Debug("hls server is closed")
 }
 
-// GetWriter 从连接池里获取writer, 如果没有, 则插入一个新的连接
+// GetWriter 创建内嵌 HLS writer；同名流仍在运行时返回 nil。
 func (s *Server) GetWriter(info *base.Info, connect *base.ConnectInfo) (base.WriteCloser, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,10 +101,10 @@ func (s *Server) GetWriter(info *base.Info, connect *base.ConnectInfo) (base.Wri
 	return stream, nil
 }
 
-// SetConnect 设置RTMP的Connect信息
+// SetConnect 保留连接信息接口；HLS 输出不使用这些字段。
 func (s *Server) SetConnect(*base.ConnectInfo) {}
 
-// [GET]"/app/ins.m3u8": 获取m3u8播放列表
+// [GET]"/hls/app/ins.m3u8": 获取m3u8播放列表
 func (s *Server) handleM3U8(w http.ResponseWriter, r *http.Request) {
 	response := s.response(w, r)
 	if response == nil {
@@ -132,7 +132,7 @@ func (s *Server) handleM3U8(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// [GET]"/app/ins/seq.ts": 获取ts文件
+// [GET]"/hls/app/ins/seq.ts": 获取ts文件
 func (s *Server) handleTS(w http.ResponseWriter, r *http.Request) {
 	response := s.response(w, r)
 	if response == nil {

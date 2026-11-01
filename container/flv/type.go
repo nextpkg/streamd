@@ -2,19 +2,19 @@ package flv
 
 // AVC type
 const (
-	// AvcSeqHdr AVC sequence header(1)
+	// AvcSeqHdr AVC sequence header(0)
 	AvcSeqHdr = iota
-	// AvcNalu AVC NALU(2)
+	// AvcNalu AVC NALU(1)
 	AvcNalu
-	// AvcEndOfSeq AVC end of sequence (lower level NALU sequence ender is not required or supported)(3)
+	// AvcEndOfSeq AVC end of sequence (lower level NALU sequence ender is not required or supported)(2)
 	AvcEndOfSeq
 )
 
 // AAC type
 const (
-	// AacSeqHdr aac sequence header(1)
+	// AacSeqHdr aac sequence header(0)
 	AacSeqHdr = iota
-	// AacRaw aac raw(2)
+	// AacRaw aac raw(1)
 	AacRaw
 )
 
@@ -29,7 +29,7 @@ const (
 	*/
 	// KeyFrame 关键帧(1)
 	KeyFrame = iota + 1
-	// InterFrame 分片帧(2)
+	// InterFrame 帧间编码帧(2)
 	InterFrame
 )
 

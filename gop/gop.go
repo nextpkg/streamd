@@ -15,7 +15,7 @@ type gopCache struct {
 }
 
 // newGopCache GOP缓存
-// num不能等于0，否则会让播放器收到无法解码的H264包
+// num 为零时禁用 GOP 缓存，播放器需等待后续关键帧。
 func newGopCache(num int) *gopCache {
 	return &gopCache{
 		len:   0,

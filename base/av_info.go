@@ -22,7 +22,7 @@ func NewInfo(app, instance string, isExternal bool) *Info {
 	}
 }
 
-// Copy 拷贝副本
+// Copy 复制流信息，并为副本生成新的 UID。
 func (i *Info) Copy() *Info {
 	return &Info{
 		App:        i.App,

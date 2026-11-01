@@ -41,7 +41,7 @@ func isEmpty(s string) bool {
 	return len(s) == 0
 }
 
-// FilterIsRTMP 过滤RTMP字符串
+// isRTMP 判断是否为 RTMP 地址。
 func isRTMP(s string) bool {
 	u, err := url.Parse(s)
 	if err != nil {

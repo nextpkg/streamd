@@ -24,17 +24,17 @@ type PublishInfo struct {
 	MetaData map[string]interface{} // 发布流的元数据
 }
 
-// InfoBaser is the basement of `info`
+// InfoBaser 提供流描述信息。
 type InfoBaser interface {
 	Info() *Info
 }
 
-// ActiveBaser is the basement of `alive`
+// ActiveBaser 提供超时状态。
 type ActiveBaser interface {
 	IsTimeout() bool
 }
 
-// WriteBaser is the basement of `write`
+// WriteBaser 提供媒体写入和关闭操作。
 type WriteBaser interface {
 	packet.Writer
 	Close()

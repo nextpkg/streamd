@@ -1,4 +1,4 @@
-// Package core 服务端: 用于响应客户端的连接请求(但不负责传输媒体数据)
+// Package core 处理 RTMP 连接、控制消息及媒体传输。
 package core
 
 import (
@@ -10,7 +10,7 @@ import (
 type ConnServer struct {
 	done          bool   // 标志是否完成指令消息读取的流程
 	method        string // 控制指令, "play", "publish"等
-	duration      int    // 流的长度，直播=0，点播>0，单位：毫秒
+	duration      int    // getStreamLength 响应值，当前固定为零
 	streamID      uint32
 	transactionID uint32
 	conn          *Conn

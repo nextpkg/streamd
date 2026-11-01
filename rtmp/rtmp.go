@@ -166,10 +166,10 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 	case core.Publish:
 		reader := core.NewReader(server)
 
-		// s.player用于接收reader数据的拷贝
+		// 注册发布者，供流管理器向订阅者分发数据
 		s.handler.InstallReader(reader)
 
-		// player在断线后定时重启
+		// 为发布流创建已配置的内嵌输出 writer
 		for _, player := range s.players {
 			if player == nil {
 				continue

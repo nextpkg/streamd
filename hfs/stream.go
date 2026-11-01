@@ -166,9 +166,7 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 			return repeated && s.started
 		}
 	case packet.PktMetadata:
-		// 过滤掉源视频的全部metadata
-		// 因为源视频的格式经过几次转换后, 包含的metadata意义不大了
-		// 举个例子, 比如源视频的metadata包含mp4编码器信息, 而这个信息对flv流是无益的, 可能会让某些播放器误判
+		// 忽略输入元数据；输出元数据由当前服务配置生成。
 		return false
 	}
 

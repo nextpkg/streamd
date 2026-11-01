@@ -22,7 +22,7 @@ func (d *Descriptor) GetBuffer() *bytes.Buffer {
 	return d.data
 }
 
-// Service serviceType: pmt表的program pid
+// Service 写入服务描述符；serviceType 为服务类型，后接提供方和服务名称。
 func (d *Descriptor) Service(serviceType byte, serviceProviderName string, serviceName string) error {
 	serviceProviderNameLen := byte(len(serviceProviderName))
 

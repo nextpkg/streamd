@@ -224,7 +224,7 @@ func (tag *Tag) CompositionTime() int32 {
 	return 0
 }
 
-// ParseMediaTagHeader [音视频]解析视频, 音频中的头部数据, 将数据填充到 Tag.mediat; b是Tag Data
+// ParseMediaTagHeader 解析 FLV Tag Data 的媒体头并填充 Tag，返回头部字节数。
 func (tag *Tag) ParseMediaTagHeader(b []byte, mediaType int) (int, error) {
 	// 根据媒体类型做不同解析，这里是解析器封装，错误直接透传
 	switch mediaType {

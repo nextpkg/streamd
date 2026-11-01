@@ -55,7 +55,7 @@ type client struct {
 	checkIn atomic.Int64
 }
 
-// NewStream 每个stream都使用一个新的UUID
+// NewStream 使用传入的流信息和当前配置创建流。
 func NewStream(info *base.Info) *Stream {
 	cfg := config.Get()
 	return newStream(info, cfg, cfg.GetApp(info.App))
@@ -373,7 +373,6 @@ func (s *Stream) readPacket() *packet.Packet {
 }
 
 // 向所有消费者发送数据
-// 潜在风险: 可能的性能瓶颈，有需要可实现二级转发，提高转发效率
 func (s *Stream) dispatch(p *packet.Packet) {
 	t1 := time.Now().UnixNano()
 
@@ -413,7 +412,7 @@ func (s *Stream) dispatch(p *packet.Packet) {
 			return true
 		}
 
-		// 【首屏秒开功能】-- 先发送GOP包给客户端
+		// 先发送缓存的 GOP，再发送后续实时包
 		err := s.inside.cache.SendTo(w)
 		if err != nil && err != core.ErrWriterWasCanceled {
 			log.Errorf("[%s]SendTo failed:%s", s.info.Key, err)
