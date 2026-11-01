@@ -48,7 +48,7 @@ type sourceStatus struct {
 // 管理源站列表
 type sourceCache struct {
 	data   []*sourceStatus // 源站列表
-	time   int64           // 列表创建的时间，单位：毫秒
+	time   int64           // 列表创建的 Unix 时间，单位：秒
 	config *config.Config
 	app    *config.App
 }

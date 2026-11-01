@@ -137,7 +137,7 @@ func (m *Mixer) SaveAACHeader(p *packet.Packet) error {
 	return m.muxer.Mux(p, 0, 0, m.cache.aacSeqHdr)
 }
 
-// SetTsHeader 封装PAT和PMT
+// SetTsHeader 写入 SDT、PAT 和 PMT。
 func (m *Mixer) SetTsHeader() error {
 	mediaType := m.cache.types.ToSlice()
 	metadata := m.cache.metadata
@@ -169,8 +169,8 @@ func (m *Mixer) SetTsHeader() error {
 
 // Update 计算音视频的pts和dts(最终是为了音视频同步)
 // 参数解释:
-// pktTs: 数据包的时间(dts)
-// avcTs: H264的时间增量
+// pktTs: 数据包的 DTS，单位毫秒
+// avcTs: H.264 CompositionTime 的 uint32 表示，按 int32 解释，单位毫秒
 //
 // 备注:
 // 视频的PTS=DTS+时间增量

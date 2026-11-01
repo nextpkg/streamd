@@ -339,7 +339,7 @@ func (s *Storage) CanSplit() bool {
 	return false
 }
 
-// CreatedTime 文件创建时间（单位：微秒）
+// CreatedTime 文件创建的 Unix 时间（单位：毫秒）
 func (s *Storage) CreatedTime() int64 {
 	return s.cTime.UnixNano() / int64(time.Millisecond)
 }

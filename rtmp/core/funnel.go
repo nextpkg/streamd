@@ -37,7 +37,7 @@ type Funnel struct {
 	drainTimeout time.Duration
 }
 
-// NewFunnel 终端执行顺序：Before() -> [loop]Write() -> After() -> Close()
+// NewFunnel 启动队列消费者，依次执行 Before、逐包 Write 和退出时的 After。
 func NewFunnel(t Terminal) *Funnel {
 	ret := &Funnel{
 		Terminal:     t,
@@ -86,7 +86,7 @@ func (f *Funnel) processor() {
 		// 复制一个新的结构体，避免由多客户同时读导致的读写竞态
 		pkt := *p
 
-		// (公式: pts = dts + baseline)
+		// 输出 DTS = 输入 DTS + 当前时间基准；视频 PTS 还需加 CompositionTime。
 		pkt.Baseline = pkt.TimeStamp + f.GetBaseTime()
 
 		// 将数据传给客户端，如果客户端返回错误则认为是不可恢复的错误，直接关闭客户端

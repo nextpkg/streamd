@@ -15,7 +15,7 @@ type Fragment struct {
 	started  bool
 }
 
-// NewFragment Ts分片时间辅助，ratedLen的单位是秒
+// NewFragment 创建分片时间记录；首次 Update 前以 ratedLen 秒作为时长。
 func NewFragment(ratedLen int64) *Fragment {
 	return &Fragment{
 		lastTime: ratedLen * 1000,
@@ -90,7 +90,7 @@ func (f *Fragment) Index() int64 {
 	return f.index
 }
 
-// Sequence 在这里规定序号的规则
+// Sequence 返回十进制分片序号。
 func (f *Fragment) Sequence() string {
 	return strconv.FormatInt(f.index, 10)
 }

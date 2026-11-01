@@ -50,7 +50,7 @@ func NewTerminal(info *base.Info, store *storage.Storage) *Stream {
 	return ret
 }
 
-// Write 调用此函数, 从管道内读取数据并处理
+// Write 处理传入的媒体包并写入 TS 录制片段。
 func (s *Stream) Write(p *packet.Packet) error {
 	if !s.unpack(p) {
 		return nil

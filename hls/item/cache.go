@@ -24,7 +24,7 @@ type TsItem struct {
 	discontinuity bool
 }
 
-// NewTsItem 新建一条可用于播放的ts项 newTsItem
+// NewTsItem 复制 TS 数据并创建播放列表项
 func NewTsItem(name string, duration, sequence int64, data []byte) *TsItem {
 	parsed, _ := url.Parse(name)
 	item := &TsItem{
@@ -48,8 +48,6 @@ func (t *TsItem) Response(w http.ResponseWriter) bool {
 	// ===============================
 	// 设置响应头
 	// ===============================
-	// 设置为允许跨域
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "video/mp2ts")
 	w.Header().Set("Content-Length", strconv.Itoa(len(t.data)))
 	// ===============================
@@ -99,7 +97,7 @@ func (t *TsItemCache) GenerateM3u8() []byte {
 }
 
 func (t *TsItemCache) generateM3u8() ([]byte, time.Duration) {
-	// "M3U8"播放列表最大时长
+	// 列表中最长的单片时长，单位：毫秒
 	maxDuration := int64(0)
 
 	// 第一个序列的序列号
@@ -169,7 +167,7 @@ func (t *TsItemCache) generateM3u8() ([]byte, time.Duration) {
 	return m3u8Data.Bytes(), time.Duration(targetDuration*int64(len(data))) * time.Second
 }
 
-// Duration 当前M3U8列表最大长度
+// Duration 返回最近生成列表的时长上界：目标片长乘以片数。
 func (t *TsItemCache) Duration() time.Duration {
 	return time.Duration(t.duration.Load()) * time.Second
 }
@@ -189,8 +187,6 @@ func (t *TsItemCache) Response(w http.ResponseWriter) time.Duration {
 	// ===============================
 	// 设置响应头
 	// ===============================
-	// 设置为允许跨域
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Content-Type", "application/x-mpegURL")
 	w.Header().Set("Content-Length", strconv.Itoa(len(m3u8)))

@@ -14,7 +14,7 @@ type ReadWriter struct {
 
 // NewReadWriter 为连接的读写函数设置缓冲, bufSize为缓冲器大小, 单位字节
 func NewReadWriter(rw io.ReadWriter, bufSize int) *ReadWriter {
-	// bufio 会变大过小的缓冲区尺寸设置（size<=0），因此，最终bufSize不一定会生效
+	// Reader 使用 bufio 的最小缓冲尺寸；Writer 在 bufSize <= 0 时使用默认尺寸。
 	r := bufio.NewReaderSize(rw, bufSize)
 	w := bufio.NewWriterSize(rw, bufSize)
 

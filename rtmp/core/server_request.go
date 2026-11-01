@@ -169,7 +169,7 @@ func (s *ConnServer) fcUnPublishMsg(cmd []interface{}) error {
 		return errors.Wrap(err, "parse FCUnpublish command failed")
 	}
 
-	// 协议为指定该如何处理这类消息，以下是自定义处理过程
+	// 清空发布信息，并记录 FCUnpublish 状态。
 	s.publish = base.PublishInfo{}
 	s.method = FCUnpublish
 
@@ -179,7 +179,7 @@ func (s *ConnServer) fcUnPublishMsg(cmd []interface{}) error {
 // 处理命令消息，如果不是命令消息则返回nil
 func (s *ConnServer) handleCommandMsg(cs *ChunkStream) error {
 
-	// 只支持AMF0, 如果出现AMF3, 只需要把第一个字节去掉即是AMF0
+	// 命令类型 17 跳过首字节后按 AMF0 解码；类型 20 直接按 AMF0 解码。
 	switch cs.typeID {
 	case 17:
 
@@ -245,7 +245,7 @@ func (s *ConnServer) handleCommandMsg(cs *ChunkStream) error {
 		return s.fcUnPublishMsg(cmd)
 	default:
 
-		// 遇到未实现的命令不需要抛出错误从而使连接断开，提高服务稳定性
+		// 忽略未识别的命令，保持连接。
 		log.Errorf("unrealized command message='%s'", cmdName)
 		return nil
 	}

@@ -15,8 +15,7 @@ import (
 // option RTMP 连接选项
 type option struct {
 	/**
-	每个chunk最大的长度，这是理论上的最大长度，用来度量过长的chunk
-	注意：这个参数可能会阻碍码率非常高的流的连接
+	消息重组的大小保护阈值，按已读分块数乘以本地 chunkSize 估算。
 	*/
 	maxChunkSize uint32
 	/**
@@ -39,15 +38,14 @@ type Conn struct {
 	chunkSize       uint32 // 本地的块大小，按此标准写chunk
 	remoteChunkSize uint32 // 远程的块大小，按此标准读chunk
 	/**
-	接收端确认窗口，设置RTMP确认包的窗口大小。
-	该值显示的是对端已接收的字节数；用来实现控制发送速率而降低拥塞可能的技术，值越大，窗口越大，带宽越大。
+	RTMP 确认窗口以字节计；窗口大小与已确认字节数分别保存。
 	*/
-	windowAckSize       uint32 // 接收端接收的最大字节数(确认窗口)
-	remoteWindowAckSize uint32 // 发送端发送的最大字节数(确认窗口)
+	windowAckSize       uint32 // 本地确认窗口（字节）
+	remoteWindowAckSize uint32 // 对端要求的 ACK 发送阈值（字节）
 	received            uint32 // 已接收的字节数(大于0xf0000000则归零)
-	ackReceived         uint32 // 服务端已接收的字节数（但未确认）
+	ackReceived         uint32 // 当前 ACK 周期计数；setPeerBandwidth 也会更新此值
 	sent                uint32 // 已发送的字节数(大于0xf0000000则归零)
-	ackSent             uint32 // 客户端已接收的字节数
+	ackSent             uint32 // 对端 ACK 消息携带的计数
 	bandwidthLimitType  byte   // 带宽限制类型
 	option              option
 	rw                  *ReadWriter             // 网络缓冲
@@ -66,7 +64,7 @@ func NewConn(conn net.Conn, bufSize int) *Conn {
 		remoteChunkSize:     128,       // 起始值一定是128
 		windowAckSize:       2500000,   // 默认本地确认窗口(字节)
 		remoteWindowAckSize: 2500000,   // 默认远程确认窗口(字节)
-		bandwidthLimitType:  0,         // 带宽限制, 类型: Soft limit
+		bandwidthLimitType:  0,         // 带宽限制类型：Hard limit
 		slab:                NewSlab(), // 内存分配器
 		rw:                  NewReadWriter(conn, bufSize),
 		chunks:              make(map[uint32]*ChunkStream),
@@ -79,7 +77,7 @@ func (c *Conn) InitSlab(min, max int) {
 	c.slab.Init(min, max)
 }
 
-// Read 【读锁】读取一个完整chunk的数据
+// Read 在读锁内重组消息，处理控制消息后返回一条完整的上层消息。
 func (c *Conn) Read(cs *ChunkStream) error {
 	for {
 		c.rLocker.Lock()
@@ -93,7 +91,7 @@ func (c *Conn) Read(cs *ChunkStream) error {
 
 		c.rLocker.Unlock()
 
-		// 客户端或服务器在收到数据后必须向对端发送与视窗大小相等的确认消息
+		// 累计本轮接收的消息载荷字节数，达到对端确认窗口后发送 ACK。
 		if err := c.ack(ncs.length); err != nil {
 			return err
 		}
@@ -106,10 +104,10 @@ func (c *Conn) Read(cs *ChunkStream) error {
 	}
 }
 
-// Write 【写锁】写入一个完整的chunk
+// Write 在写锁内将完整消息分块写入缓冲区。
 func (c *Conn) Write(cs *ChunkStream) error {
 	if false {
-		// 监控发送的数据量，在客户端接收能力不足时应控制发送速率，直到客户端接收量恢复正常
+		// 此 ACK 丢包分支当前禁用。
 		ackSent := atomic.LoadUint32(&c.ackSent)
 
 		// 为避免客户端一直接收不过来，这里采用了丢包的策略
@@ -161,7 +159,7 @@ func (c *Conn) Close() error {
 func (c *Conn) getIntactChunk() (*ChunkStream, error) {
 	var counter uint32
 
-	// 标记数据无效，加速GC回收
+	// 释放上一条消息的载荷引用
 	ncs, ok := c.chunks[c.csID]
 	if ok {
 		ncs.data = nil
@@ -174,7 +172,7 @@ func (c *Conn) getIntactChunk() (*ChunkStream, error) {
 				counter*c.chunkSize, c.option.maxChunkSize)
 		}
 
-		// 读取一个字节, 以大端的形式保存到h中
+		// 读取 basic header 的首字节
 		basicHeader, err := c.rw.ReadUintBE(1)
 		if err != nil {
 			return nil, err
@@ -184,7 +182,7 @@ func (c *Conn) getIntactChunk() (*ChunkStream, error) {
 		format := basicHeader >> 6 /* [0,3] */
 		csID := basicHeader & 0x3f /* [0,63] */
 
-		// 潜在风险：无效的csID会有很多吗？可能chunks会变得很大
+		// 按 basic header 的 CSID 字段保存分块重组状态。
 		ncs, ok = c.chunks[csID]
 		if !ok {
 			ncs = &ChunkStream{
@@ -205,7 +203,7 @@ func (c *Conn) getIntactChunk() (*ChunkStream, error) {
 		// store
 		c.chunks[csID] = ncs
 
-		// 读完一个chunk
+		// 整条消息重组完成
 		if ncs.intact() {
 			return ncs, nil
 		}
@@ -224,7 +222,7 @@ func (c *Conn) setChunkSize(cs *ChunkStream) {
 		return
 	}
 
-	// 理论上最大块大小不能小于1字节(实际上太小会增加CPU负载, 所以设置默认128)
+	// 当前接收策略拒绝小于 128 字节的 chunk size。
 	if remoteChunkSize < 128 {
 		log.Error("incorrect chunk size ", remoteChunkSize)
 		return
@@ -235,7 +233,7 @@ func (c *Conn) setChunkSize(cs *ChunkStream) {
 		remoteChunkSize = 0xFFFFFF
 	}
 
-	// 设置块大小，用于通知另一端新的最大块大小
+	// 保存对端声明的块大小，供后续接收分块使用
 	c.remoteChunkSize = remoteChunkSize
 	log.Trace("remote chunk size is changed to ", remoteChunkSize)
 }
@@ -243,10 +241,10 @@ func (c *Conn) setChunkSize(cs *ChunkStream) {
 func (c *Conn) setPeerBandwidth(cs *ChunkStream) {
 	bandwidth := binary.BigEndian.Uint32(cs.data)
 
-	// 通过将已发送但尚未被确认的数据总数限制为该消息指定的视窗大小, 来实现限制输出带宽的目的
+	// 解析对端带宽窗口和限制类型；当前仅更新计数，不在此处执行限速。
 	limitType := cs.data[4]
 
-	// Dynamic: 如果上一个消息的限制类型为Hard，则该消息同样为Hard，否则抛弃该消息
+	// Dynamic: 已保存的限制类型为 Hard 时按 Hard 处理，否则不更新计数。
 	if limitType == 2 && c.bandwidthLimitType == 0 {
 		limitType = 0
 	}
@@ -254,10 +252,10 @@ func (c *Conn) setPeerBandwidth(cs *ChunkStream) {
 	// Hard and Soft limit
 	switch limitType {
 	case 0:
-		// Hard: 消息接收端应该将输出带宽限制为指定视窗大小
+		// Hard: 将 ackReceived 设置为收到的窗口值。
 		c.ackReceived = bandwidth
 	case 1:
-		// Soft: 消息接收端应该将输出带宽限制为指定视窗大小和当前视窗大小中较小的值
+		// Soft: 将 ackReceived 收敛到收到的窗口值与当前计数中的较小值。
 		if bandwidth < c.ackReceived {
 			c.ackReceived = bandwidth
 		}
@@ -312,7 +310,7 @@ func (c *Conn) handleUserMsg(cs *ChunkStream) {
 		streamID := binary.BigEndian.Uint32(cs.data[2:6])
 		bufferLen := binary.BigEndian.Uint32(cs.data[6:10])
 
-		// 【实时流可以实现】客户端指明每毫秒能接收的字节数，服务端应该按这个字节数来调整发送速率
+		// bufferLen 是客户端请求的缓冲时长（毫秒），当前仅记录日志。
 		log.Tracef("unrealized setBufferLen command,streamID=%d,bufferLen=%d", streamID, bufferLen)
 	case pingResponse:
 		// 事件数据是客户端接收到pingRequest请求时的4字节时间戳
@@ -326,7 +324,7 @@ func (c *Conn) handleUserMsg(cs *ChunkStream) {
 	}
 }
 
-// 客户端或服务器在收到数据后必须向对端发送与视窗大小相等的确认消息
+// 累计本轮接收的消息载荷字节数，达到对端确认窗口后发送 ACK。
 func (c *Conn) ack(received uint32) error {
 	c.received += received
 	if c.received >= 0xf0000000 {

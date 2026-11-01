@@ -94,7 +94,7 @@ func (muxer *Muxer) writePCR(pes *table.Pes, dts int64) {
 	pes.WritePcr(muxer.tsPacket[6:], dts)
 }
 
-// Mux 复用TS流(使用到: p.Header(FLV信息), p.data(FLV数据),p.Media(音视频数据), p.Timestamp)
+// Mux 将 p.Media 封装成 TS；p.Type 和 p.Header 决定媒体类型，dts、pts 使用 90 kHz 时钟。
 // 视频数据含有B帧时, pts需要在dts的基础上加偏移量; 如果不含B帧, 则pts=dts
 func (muxer *Muxer) Mux(p *packet.Packet, dts, pts int64, w io.Writer) error {
 
@@ -282,11 +282,11 @@ func (muxer *Muxer) PMT(mediaType ...int) []byte {
 	for _, v := range mediaType {
 		switch v {
 		case packet.PktVideo:
-			// 视频节目参考时钟(PCR_PID)所在TS分组的PID: 0x00
+			// 设置 PCR PID 的低字节为 0x00（完整 PID 为 0x0100）
 			pmt.PmtHeader[9] = 0x00
 			programInfo.Write(pro.Avc)
 		case packet.PktAudio:
-			// 音频节目参考时钟(PCR_PID)所在TS分组的PID: 0x01
+			// 设置 PCR PID 的低字节为 0x01（完整 PID 为 0x0101）
 			pmt.PmtHeader[9] = 0x01
 			programInfo.Write(pro.Aac)
 		}

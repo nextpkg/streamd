@@ -95,7 +95,7 @@ func (m *Mixer) SaveAACHeader(p *packet.Packet) error {
 	return m.muxer.mux(p, 0, m.cache.aacSeqHdr)
 }
 
-// SetFlvHeader 设置FLV的头部数据，每次调用都会增加TS头部计数
+// SetFlvHeader 写入 FLV 文件头、元数据和已缓存的音视频序列头。
 func (m *Mixer) SetFlvHeader() error {
 	mt := m.cache.types.ToSlice()
 

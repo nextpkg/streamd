@@ -58,7 +58,7 @@ func (s *Server) statPubInfo(w http.ResponseWriter, req *http.Request) {
 	ww.QuickSendJSON(0, "OK", ret)
 }
 
-// statSubInfo 统计发布流的数据信息
+// statSubInfo 统计订阅连接的数据信息
 // [GET]请求参数: key=app/instance
 func (s *Server) statSubInfo(w http.ResponseWriter, req *http.Request) {
 	ww := web.NewWriter(w)

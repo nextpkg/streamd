@@ -327,7 +327,7 @@ func (c *ConnClient) objCmd(v interface{}) error {
 
 	switch c.current {
 	case Connect:
-		// RTSP
+		// RTMP 服务端版本信息
 		_, ok := property["fmsVer"]
 		if ok {
 			return nil

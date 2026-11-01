@@ -1,4 +1,4 @@
-// Package flv 从av.Packet.data中解复用出flv的头和flv的包体内容
+// Package flv 解析和封装 FLV 标签及媒体数据。
 package flv
 
 import (
@@ -14,12 +14,12 @@ func NewDemuxer() *Demuxer {
 }
 
 // Demux flv解复用
-// [音视频]解析FLV:Tag Data, 填充到 base.Packet 中
+// 解析 p.Data 中的 FLV 媒体头，并设置 p.Header 和 p.Media。
 func (d *Demuxer) Demux(p *packet.Packet) error {
 
 	var tag Tag
 
-	// 解析出 Flv Body中Tag Data的媒体头, 填充到 Tag.Mediat 中
+	// 解析媒体头，n 为媒体头所占字节数
 	n, err := tag.ParseMediaTagHeader(p.Data, p.Type)
 	if err != nil {
 		return err

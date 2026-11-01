@@ -26,12 +26,7 @@ func (s *ConnServer) handlePublish(args []interface{}) error {
 				s.publish.Name = v
 				log.Trace("publish name is ", s.publish.Name)
 			case 3:
-				/**
-				发布流的类型。设置为"live", "record", "append"
-				live: 发布直播流，数据不会被录制
-				record: 发布流并且数据被录制在一个新文件中。这个文件被存储在服务器应用程序的子目录中, 如果文件已经存在, 那么它将会被覆盖
-				append: 发布流并且数据被追加在文件的后面，如果文件不存在，它将会被创建
-				*/
+				// 保存客户端声明的发布类型；录制行为由应用的 recorder 配置控制。
 				switch v {
 				case publishLive, publishRecord, publishAppend:
 					s.publish.Type = v
@@ -62,21 +57,12 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 
 				switch {
 				case start <= -2:
-					/**
-					该订阅者第一次尝试播放流名称字段指定的直播流。
-					如果该名称的直播流没有被找到，它会播放同名的录播流。
-					如果没有该名称的录播流，该订阅者等到该名称的直播流可用时再播放。
-					*/
+					// 当前仅记录该 start 值，不执行直播转录播查找。
 					log.Tracef("unrealized start=%d", start)
 				case start == -1, start == 0:
-					/**
-					只有流名称字段指定的直播流才会被播放。
-					*/
+					// 使用直播播放路径。
 				case start > 0:
-					/**
-					一个在流名称字段指定的录播流会被播放，起始时间是Start字段指定的时间。
-					如果找不到该记录流，播放列表的下一个条目会被播放。
-					*/
+					// 当前仅记录该 start 值，不执行录播定位。
 					log.Tracef("unrealized start=%d", start)
 				}
 			case 4:
@@ -85,19 +71,12 @@ func (s *ConnServer) handlePlay(args []interface{}) error {
 
 				switch {
 				case duration <= -1:
-					/**
-					直播流被播放直到它不可用，或者录播流被播放直到结束
-					*/
+					// 不设置播放时长限制。
 				case duration == 0:
-					/**
-					它会播放录播流中Start字段指定开始时间的一帧，它假定Start字段的值大于等于0
-					*/
+					// 当前仅记录零时长请求，不执行单帧播放。
 					log.Tracef("unrealized duration=%d", duration)
 				case duration > 0:
-					/**
-					它会播放Duration字段指定该段时间的直播流。
-					之后，它能够播放Duration字段指定该段时间的录播流。
-					*/
+					// 当前仅记录指定时长，不按 duration 截断播放。
 					log.Tracef("unrealized duration=%d", duration)
 				}
 			}
@@ -124,7 +103,7 @@ func (s *ConnServer) handleGetStreamLength(args []interface{}) error {
 			s.transactionID = uint32(v)
 		case string:
 
-			// 未实现：通过发布流名称获取流的长度，RTMP如需支持历史视频，此处应实现按流的名字查找历史视频长度
+			// 当前 getStreamLength 固定返回零。
 			s.duration = 0
 		}
 	}
@@ -143,7 +122,7 @@ func (s *ConnServer) handleCreateStream(args []interface{}) error {
 			s.transactionID = uint32(v)
 		case amf.Object:
 
-			// 【可以不实现】这里的命令对象由客户端自定义
+			// 客户端自定义命令对象，当前仅记录日志。
 			log.Trace("unrealized object")
 		}
 	}
@@ -241,7 +220,7 @@ func (s *ConnServer) handleConnect(args []interface{}) error {
 				continue
 			}
 
-			// 【可以不实现】用户可选参数
+			// 用户可选参数，当前仅记录日志。
 			log.Tracef("unrealized optional user object")
 		}
 	}

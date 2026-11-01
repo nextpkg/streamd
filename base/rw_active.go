@@ -46,7 +46,7 @@ func (rw *Active) RebaseAfterPresentation() {
 	rw.baseMediaTime.Store(last + interval)
 }
 
-// SetMediaTime [写时]设置音视频的最后活跃时间戳(因为RTMP包有增量时间戳)
+// SetMediaTime 记录媒体包的输出时间戳和帧间隔，跳过序列头与序列尾。
 func (rw *Active) SetMediaTime(p *packet.Packet) {
 	switch p.Type {
 	case packet.PktVideo:
@@ -89,7 +89,7 @@ func (rw *Active) Keepalive() {
 	rw.active.Store(time.Now().Unix())
 }
 
-// IsTimeout 根据时间判断是否活跃, 活跃标准: 当前时间 - preTime < timeout
+// IsTimeout 判断距上次活跃是否超过超时秒数；超时配置不大于零时禁用。
 func (rw *Active) IsTimeout() bool {
 	tmo := readTimeout.Load()
 	if tmo <= 0 {
