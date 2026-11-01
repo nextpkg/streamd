@@ -98,7 +98,7 @@ func (server *Server) Download(key string) []byte {
 	if err != nil {
 		server.test.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	data, err := io.ReadAll(response.Body)
 	if err != nil || response.StatusCode != http.StatusOK {
 		server.test.Fatalf("download failed: %v, HTTP %d", err, response.StatusCode)

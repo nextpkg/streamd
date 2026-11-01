@@ -66,16 +66,16 @@ func queryInstant(ctx context.Context, client *http.Client, address, expression 
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Prometheus returned HTTP %d", response.StatusCode)
+		return nil, fmt.Errorf("prometheus returned HTTP %d", response.StatusCode)
 	}
 	body, err := io.ReadAll(io.LimitReader(response.Body, 1024*1024+1))
 	if err != nil {
 		return nil, err
 	}
 	if len(body) > 1024*1024 {
-		return nil, errors.New("Prometheus response exceeds 1 MiB")
+		return nil, errors.New("prometheus response exceeds 1 MiB")
 	}
 	var result struct {
 		Status string `json:"status"`
@@ -92,7 +92,7 @@ func queryInstant(ctx context.Context, client *http.Client, address, expression 
 		return nil, err
 	}
 	if result.Status != "success" || result.Data.Type != "vector" || len(result.Data.Result) == 0 {
-		return nil, errors.New("Prometheus query must return a nonempty successful instant vector")
+		return nil, errors.New("prometheus query must return a nonempty successful instant vector")
 	}
 	var samples []querySample
 	for _, sample := range result.Data.Result {
@@ -105,7 +105,7 @@ func queryInstant(ctx context.Context, client *http.Client, address, expression 
 		}
 		parsed, err := strconv.ParseFloat(number, 64)
 		if err != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) {
-			return nil, errors.New("Prometheus sample must be finite and numeric")
+			return nil, errors.New("prometheus sample must be finite and numeric")
 		}
 		samples = append(samples, querySample{Labels: sample.Metric, Value: parsed})
 	}

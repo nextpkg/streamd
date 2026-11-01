@@ -15,7 +15,7 @@ func TestOriginProxyFaultsAndRecovery(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	upstreamDone := make(chan struct{})
 	go func() {
 		defer close(upstreamDone)
@@ -23,7 +23,7 @@ func TestOriginProxyFaultsAndRecovery(test *testing.T) {
 		if err != nil {
 			return
 		}
-		defer connection.Close()
+		defer func() { _ = connection.Close() }()
 		_, _ = io.Copy(connection, connection)
 	}()
 	proxy, err := newOriginProxy(context.Background(), listener.Addr().String(), false)

@@ -518,7 +518,7 @@ func (harness *harness) proxyMedia() (failure error) {
 			return err
 		}
 		count, err := io.Copy(io.Discard, io.LimitReader(viewer.reader, 16<<20))
-		if count >= 16<<20 || !(err == nil || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, io.ErrUnexpectedEOF)) {
+		if count >= 16<<20 || (err != nil && !errors.Is(err, syscall.ECONNRESET) && !errors.Is(err, io.ErrUnexpectedEOF)) {
 			return fmt.Errorf("proxy FLV did not close: bytes=%d error=%v", count, err)
 		}
 		closures = append(closures, map[string]any{"protocol": "http-flv", "local": viewer.local, "bytes_after_retirement": count, "peer_closed": true, "terminal_error": fmt.Sprint(err)})

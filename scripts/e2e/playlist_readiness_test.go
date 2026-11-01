@@ -17,11 +17,11 @@ func TestWaitPlaylistRejectsRetiredGeneration(test *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		switch requests.Add(1) {
 		case 1:
-			fmt.Fprint(response, live+"#EXT-X-ENDLIST\n")
+			_, _ = fmt.Fprint(response, live+"#EXT-X-ENDLIST\n") // The HTTP client validates the response; disconnects need no retry.
 		case 2:
 			http.Error(response, "playlist is preparing", http.StatusAccepted)
 		default:
-			fmt.Fprint(response, live)
+			_, _ = fmt.Fprint(response, live) // The HTTP client validates the response; disconnects need no retry.
 		}
 	}))
 	defer server.Close()
@@ -40,14 +40,14 @@ func TestWaitRelayPlaylistStoppedRequiresRetirement(test *testing.T) {
 			var requests atomic.Int64
 			server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 				if requests.Add(1) == 1 {
-					fmt.Fprint(response, "#EXTM3U\n#EXTINF:2.000,\nsample/1.ts\n")
+					_, _ = fmt.Fprint(response, "#EXTM3U\n#EXTINF:2.000,\nsample/1.ts\n") // The HTTP client validates the response; disconnects need no retry.
 					return
 				}
 				if gone {
 					http.NotFound(response, request)
 					return
 				}
-				fmt.Fprint(response, "#EXTM3U\n#EXTINF:2.000,\nsample/1.ts\n#EXT-X-ENDLIST\n")
+				_, _ = fmt.Fprint(response, "#EXTM3U\n#EXTINF:2.000,\nsample/1.ts\n#EXT-X-ENDLIST\n") // The HTTP client validates the response; disconnects need no retry.
 			}))
 			defer server.Close()
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)

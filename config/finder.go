@@ -52,7 +52,7 @@ func GetLocalRoutes(address string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer connection.Close()
+	defer func() { _ = connection.Close() }()
 	host, _, err := net.SplitHostPort(connection.LocalAddr().String())
 	return host, err
 }
@@ -163,7 +163,7 @@ func (finder *Finder) validate(ctx context.Context, apps map[string]*App) error 
 		if !valid || ready.Kind != "psubscribe" || ready.Channel != cache.channels+"*" || ready.Count != 1 {
 			_ = subscription.Close()
 			finder.Close()
-			return errors.New("Redis discovery subscription was not confirmed")
+			return errors.New("redis discovery subscription was not confirmed")
 		}
 		finder.runtime.wg.Add(1)
 		go finder.monitor(cache, subscription)
@@ -173,7 +173,7 @@ func (finder *Finder) validate(ctx context.Context, apps map[string]*App) error 
 
 func (finder *Finder) monitor(cache *confd, subscription *redis.PubSub) {
 	defer finder.runtime.wg.Done()
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 	ticker := time.NewTicker(finder.Interval * time.Second)
 	defer ticker.Stop()
 	messages := subscription.Channel()
@@ -185,9 +185,9 @@ func (finder *Finder) monitor(cache *confd, subscription *redis.PubSub) {
 			if !ok {
 				return
 			}
-			finder.store(cache)
+			_ = finder.store(cache) // store logs failures and retains the last confirmed cache for retry.
 		case <-ticker.C:
-			finder.store(cache)
+			_ = finder.store(cache) // store logs failures and retains the last confirmed cache for retry.
 		}
 	}
 }

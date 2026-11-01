@@ -97,9 +97,9 @@ func (c *Conn) Reader(key string) *core.Reader {
 		panic("ReadCloser is nil")
 	}
 
-	switch sc.(type) {
+	switch sc := sc.(type) {
 	case *core.Reader:
-		return sc.(*core.Reader)
+		return sc
 	}
 
 	return nil
@@ -119,9 +119,9 @@ func (c *Conn) Writer(key string) []*core.Funnel {
 	for _, sw := range writer {
 		wc := sw.WriteCloser
 
-		switch wc.(type) {
+		switch wc := wc.(type) {
 		case *core.Funnel:
-			w := wc.(*core.Funnel)
+			w := wc
 			ret = append(ret, w)
 		}
 	}
@@ -263,11 +263,7 @@ func (c *Conn) findWithConfig(ds *sourceCache, info *base.Info, cfg *config.Conf
 		ds.data = append(ds.data, ss)
 	}
 
-	if len(ds.data) == 0 {
-		return false
-	}
-
-	return true
+	return len(ds.data) != 0
 }
 
 // InstallWriter 数据源将被写入writer。
@@ -365,7 +361,7 @@ func (c *Conn) close() {
 	}
 	for index := range c.locks {
 		c.locks[index].Lock()
-		c.locks[index].Unlock()
+		c.locks[index].Unlock() //nolint:staticcheck // SA2001: wait for in-flight per-key operations after closing admission.
 	}
 	c.origins.Range(func(_, value any) bool {
 		value.(*originFlight).cancel()

@@ -38,11 +38,7 @@ Loop:
 
 // isEmpty 过滤空字符串
 func isEmpty(s string) bool {
-	if len(s) == 0 {
-		return true
-	}
-
-	return false
+	return len(s) == 0
 }
 
 // FilterIsRTMP 过滤RTMP字符串

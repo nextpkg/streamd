@@ -22,7 +22,7 @@ func requireSilentMediaLog(filename string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	body, err := io.ReadAll(io.LimitReader(file, 4096))
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (progress *stabilityProgress) read(filename string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	info, err := file.Stat()
 	if err != nil {
 		return 0, err

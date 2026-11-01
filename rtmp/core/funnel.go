@@ -57,9 +57,9 @@ func NewFunnel(t Terminal) *Funnel {
 
 // 处理流进来的数据
 func (f *Funnel) processor() {
-	f.Terminal.Before()
+	f.Before()
 	defer func() {
-		f.Terminal.After()
+		f.After()
 		f.queueMu.Lock()
 		if f.drainTimer != nil {
 			f.drainTimer.Stop()
@@ -76,7 +76,7 @@ func (f *Funnel) processor() {
 			break
 		}
 		if p == nil {
-			f.Active.RebaseAfterPresentation()
+			f.RebaseAfterPresentation()
 			if terminal, ok := f.Terminal.(interface{ Discontinuity() }); ok {
 				terminal.Discontinuity()
 			}
@@ -98,14 +98,14 @@ func (f *Funnel) processor() {
 		}
 
 		// 更新状态信息
-		f.Active.Keepalive()
-		f.Active.SetMediaTime(&pkt)
+		f.Keepalive()
+		f.SetMediaTime(&pkt)
 
 		// 更新统计数据
-		f.Stat.Update(&pkt)
+		f.Update(&pkt)
 
 		metrics.Average(f.Info().App, f.Info().Instance, metrics.PlaybackBW,
-			float64(f.Stat.VideoBps()+f.Stat.AudioBps())*8,
+			float64(f.VideoBps()+f.AudioBps())*8,
 		)
 	}
 }

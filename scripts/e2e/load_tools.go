@@ -315,7 +315,7 @@ func (harness *harness) loadTools() (failure error) {
 			return
 		}
 		queryCount.Add(1)
-		fmt.Fprint(response, `{"status":"success","data":{"resultType":"vector","result":[{"metric":{"instance":"contract"},"value":[1,"12.5"]}]}}`)
+		_, _ = fmt.Fprint(response, `{"status":"success","data":{"resultType":"vector","result":[{"metric":{"instance":"contract"},"value":[1,"12.5"]}]}}`) // The HTTP client validates the response; disconnects need no retry.
 	}))
 	defer queryServer.Close()
 	query, err := harness.launch("tool-query", tool, "query", "-address", queryServer.URL, "-out", output)

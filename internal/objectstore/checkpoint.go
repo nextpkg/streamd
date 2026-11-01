@@ -40,7 +40,7 @@ func checkpointKey(key string) string {
 }
 
 func readCheckpointBody(body io.ReadCloser) ([]byte, error) {
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 	data, err := io.ReadAll(io.LimitReader(body, maxCheckpointSize+1))
 	if err != nil {
 		return nil, err

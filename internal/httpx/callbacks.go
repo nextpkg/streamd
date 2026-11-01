@@ -86,7 +86,7 @@ func (executor *callbackExecutor) post(address string, data []byte) error {
 	if err != nil {
 		return &callbackFailure{stage: "request", cause: err}
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("callback returned HTTP %d", response.StatusCode)
 	}

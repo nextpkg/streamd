@@ -270,7 +270,7 @@ func (harness *harness) callbackStress() (failure error) {
 	if err != nil {
 		return err
 	}
-	defer overflow.Close()
+	defer func() { _ = overflow.Close() }()
 	overflowElapsed := time.Since(overflowStarted)
 	if overflowElapsed > 500*time.Millisecond {
 		return errors.New("full callback admission blocked RTMP publisher setup")
@@ -323,7 +323,7 @@ func (harness *harness) callbackStress() (failure error) {
 	if err != nil {
 		return err
 	}
-	defer recovered.Close()
+	defer func() { _ = recovered.Close() }()
 	if err := harness.until("callback admission resumes after pressure is released", time.Second, func() (bool, error) {
 		observations, _ := receiver.snapshot()
 		for _, observation := range observations {
@@ -386,7 +386,7 @@ func (harness *harness) callbackStress() (failure error) {
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 	}
 	if err := harness.until("two held callbacks while publishers and recordings remain active", time.Second, func() (bool, error) {
 		_, state := receiver.snapshot()

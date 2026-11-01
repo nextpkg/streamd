@@ -18,7 +18,7 @@ func (harness *harness) rejectApplicationRTMP(app, instance, method string) erro
 	if err != nil {
 		return err
 	}
-	defer transport.Close()
+	defer func() { _ = transport.Close() }()
 	if err := transport.SetDeadline(time.Now().Add(2 * time.Second)); err != nil {
 		return err
 	}

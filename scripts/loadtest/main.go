@@ -59,7 +59,9 @@ func main() {
 func parseOptions(arguments []string, output io.Writer) (options, error) {
 	var settings options
 	if len(arguments) == 0 || arguments[0] == "-h" || arguments[0] == "--help" {
-		fmt.Fprintln(output, "Usage: loadtest publish|play|slab|query [flags]; each command supports -h")
+		if _, err := fmt.Fprintln(output, "Usage: loadtest publish|play|slab|query [flags]; each command supports -h"); err != nil {
+			return settings, err
+		}
 		return settings, flag.ErrHelp
 	}
 	settings.mode = arguments[0]
@@ -189,7 +191,11 @@ func execute(ctx context.Context, arguments []string, output, diagnostics io.Wri
 			evidence.Error = result.Error()
 		}
 		result = errors.Join(result, writeJSON(filepath.Join(directory, "results.json"), evidence))
-		fmt.Fprintln(output, directory)
+		if _, err := fmt.Fprintln(output, directory); err != nil {
+			result = errors.Join(result, err)
+			evidence.Complete, evidence.Error = false, result.Error()
+			result = errors.Join(result, writeJSON(filepath.Join(directory, "results.json"), evidence))
+		}
 	}()
 	switch settings.mode {
 	case "publish", "play":
@@ -199,11 +205,15 @@ func execute(ctx context.Context, arguments []string, output, diagnostics io.Wri
 	case "query":
 		evidence.Metrics, result = queryMetrics(ctx, settings)
 		if result == nil {
-			fmt.Fprintln(output, "metric\tlabels\tvalue")
+			if _, err := fmt.Fprintln(output, "metric\tlabels\tvalue"); err != nil {
+				return err
+			}
 			for _, metric := range evidence.Metrics {
 				for _, sample := range metric.Samples {
 					labels, _ := json.Marshal(sample.Labels)
-					fmt.Fprintf(output, "%s\t%s\t%g\n", metric.Name, labels, sample.Value)
+					if _, err := fmt.Fprintf(output, "%s\t%s\t%g\n", metric.Name, labels, sample.Value); err != nil {
+						return err
+					}
 				}
 			}
 		}

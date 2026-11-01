@@ -19,7 +19,7 @@ func TestConcurrentColdViewersWaitForOriginStartup(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	accepted := make(chan net.Conn, 1)
 	go func() {
 		connection, err := listener.Accept()
@@ -47,7 +47,7 @@ func TestConcurrentColdViewersWaitForOriginStartup(test *testing.T) {
 	case <-time.After(time.Second):
 		test.Fatal("origin startup was not attempted")
 	}
-	defer origin.Close()
+	defer func() { _ = origin.Close() }()
 	started := make(chan struct{}, len(writers)-1)
 	for _, writer := range writers[1:] {
 		callers.Add(1)

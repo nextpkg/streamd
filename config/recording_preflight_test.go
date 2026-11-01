@@ -43,11 +43,11 @@ func TestRecordingPreflightRejectsUnusableCandidateWithoutRevokingActive(test *t
 					reject := operation == "credentials" || (object && ((operation == "write" && request.Method == http.MethodPut) || (operation == "read" && request.Method == http.MethodGet) || (operation == "delete" && request.Method == http.MethodDelete)))
 					if enabled.Load() && reject {
 						writer.WriteHeader(http.StatusForbidden)
-						fmt.Fprint(writer, "<Error><Code>AccessDenied</Code><Message>secret-do-not-log</Message></Error>")
+						_, _ = fmt.Fprint(writer, "<Error><Code>AccessDenied</Code><Message>secret-do-not-log</Message></Error>") // The HTTP client validates the response; disconnects need no retry.
 						return
 					}
 					if enabled.Load() && operation == "corrupt-read" && object && request.Method == http.MethodGet {
-						fmt.Fprint(writer, "wrong object content")
+						_, _ = fmt.Fprint(writer, "wrong object content") // The HTTP client validates the response; disconnects need no retry.
 						return
 					}
 					proxy.ServeHTTP(writer, request)

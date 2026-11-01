@@ -45,7 +45,7 @@ func (s *Server) Init(r *http.ServeMux) *http.ServeMux {
 
 	register := func(method, path string, handler http.HandlerFunc) {
 		guarded := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method != method && !(method == http.MethodGet && request.Method == http.MethodHead) {
+			if request.Method != method && (method != http.MethodGet || request.Method != http.MethodHead) {
 				writer.Header().Set("Allow", method)
 				web.NewWriter(writer).QuickSendJSON(http.StatusMethodNotAllowed, "method not allowed", nil)
 				return

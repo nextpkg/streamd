@@ -133,7 +133,7 @@ func (harness *harness) ordinaryCallbackPublications(receiver *combinationReceiv
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		if err := harness.until("ordinary publication callback", time.Second, func() (bool, error) {
 			observations, _ := receiver.snapshot()
 			count := 0

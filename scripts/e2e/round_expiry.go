@@ -145,7 +145,8 @@ func (harness *harness) roundExpiry() (result error) {
 	bucket := "test-bucket"
 	harness.results["round_backend"] = backend
 	harness.results["round_scope"] = "foreground wall-clock expiry during continuous publishing; final active tails separately completed by disabling recording"
-	if backend == "aws" {
+	switch backend {
+	case "aws":
 		container, err := harness.startObjectContainer()
 		if err != nil {
 			return err
@@ -160,7 +161,7 @@ func (harness *harness) roundExpiry() (result error) {
 			return err
 		}
 		harness.results["round_backend_scope"] = "actual pinned SeaweedFS S3-compatible container; not AWS vendor certification"
-	} else if backend == "cos" {
+	case "cos":
 		contract = teststore.NewHTTP("")
 		defer contract.Close()
 		object = &objectConfig{Enable: true, Endpoint: contract.URL, SecretID: "test-id", SecretKey: "test-secret"}
@@ -179,9 +180,10 @@ func (harness *harness) roundExpiry() (result error) {
 		app.Event = &config.AppEvent{OnPublish: callbacks.URL + "/publication", OnPublishDone: callbacks.URL + "/publication"}
 		app.Recorder.Driver = backend
 		app.Recorder.Event = &config.RecorderEvent{OnRecord: callbacks.URL + "/round", OnRecordDone: callbacks.URL + "/round"}
-		if backend == "aws" {
+		switch backend {
+		case "aws":
 			app.Recorder.AWS = object
-		} else if backend == "cos" {
+		case "cos":
 			app.Recorder.COS = object
 		}
 	}
@@ -387,7 +389,7 @@ func (harness *harness) roundExpiryInventory(reader *s3.Client, contract *testst
 				return nil, err
 			}
 			if response.StatusCode != http.StatusOK {
-				response.Body.Close()
+				_ = response.Body.Close()
 				return nil, errors.New("COS completed recording unavailable")
 			}
 			body = response.Body

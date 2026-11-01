@@ -153,7 +153,7 @@ func (c *Conn) Close() error {
 	defer c.rLocker.Unlock()
 	if c.slab.stat.max > 0 || c.slab.stat.medium > 0 || c.slab.stat.min > 0 {
 		log.Tracef("Connection from %s is closed,slab stat,max:%d,medium:%d,min:%d",
-			c.Conn.RemoteAddr(), c.slab.stat.max, c.slab.stat.medium, c.slab.stat.min)
+			c.RemoteAddr(), c.slab.stat.max, c.slab.stat.medium, c.slab.stat.min)
 	}
 	return err
 }

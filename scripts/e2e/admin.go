@@ -30,7 +30,7 @@ func (harness *harness) adminData(ctx context.Context, path string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	var envelope struct {
 		Code    int
 		Message string
@@ -151,7 +151,7 @@ func (harness *harness) stallAdmin() (*stalledAdmin, error) {
 	ready := false
 	defer func() {
 		if !ready {
-			connection.Close()
+			_ = connection.Close()
 		}
 	}()
 	if err := connection.SetReadBuffer(1024); err != nil {
@@ -346,7 +346,7 @@ func (harness *harness) adminStatistics() error {
 						return
 					}
 					body, err := io.ReadAll(response.Body)
-					response.Body.Close()
+					_ = response.Body.Close()
 					if err != nil {
 						return
 					}
@@ -367,7 +367,7 @@ func (harness *harness) adminStatistics() error {
 	clients := []*stalledAdmin{}
 	defer func() {
 		for _, client := range clients {
-			client.connection.Close()
+			_ = client.connection.Close()
 		}
 	}()
 	for range 2 {
@@ -393,7 +393,7 @@ func (harness *harness) adminStatistics() error {
 			return err
 		}
 		retirements = append(retirements, result)
-		client.connection.Close()
+		_ = client.connection.Close()
 	}
 	harness.results["admin_slow_response_retirements"] = retirements
 	if err := harness.waitAt(20); err != nil {

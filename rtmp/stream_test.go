@@ -198,5 +198,5 @@ func TestNewStream(t *testing.T) {
 	time.Sleep(15 * time.Millisecond)
 
 	at.Equal(1, len(s.Writer()))
-	return
+
 }

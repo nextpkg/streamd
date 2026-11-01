@@ -34,11 +34,6 @@ func (f *Fragment) isNewer(t1, t2 uint32) bool {
 
 // Update 更新分片的最后活跃时间戳
 func (f *Fragment) Update(ts uint32) {
-	if ts < 0 {
-		// rtmp的ts是uint32类型，不会走到这个分支
-		log.Warn("update ts should not <0")
-		return
-	}
 
 	// 分片时间初始化
 	if !f.started {

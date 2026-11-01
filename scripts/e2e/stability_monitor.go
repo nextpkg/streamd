@@ -82,7 +82,7 @@ func (harness *harness) startStabilityMonitor() (monitor *stabilityMonitor, resu
 func (monitor *stabilityMonitor) target(harness *harness, save bool) (bool, error) {
 	status, body, err := harness.fetch(monitor.origin + "/api/v1/targets")
 	if err != nil || status != http.StatusOK {
-		return false, fmt.Errorf("Prometheus targets HTTP %d: %v", status, err)
+		return false, fmt.Errorf("prometheus targets HTTP %d: %v", status, err)
 	}
 	var response struct {
 		Status string
@@ -99,7 +99,7 @@ func (monitor *stabilityMonitor) target(harness *harness, save bool) (bool, erro
 		return false, err
 	}
 	if response.Status != "success" || len(response.Data.ActiveTargets) != 1 {
-		return false, errors.New("Prometheus target inventory differs")
+		return false, errors.New("prometheus target inventory differs")
 	}
 	target := response.Data.ActiveTargets[0]
 	if target.Health != "up" || target.LastError != "" || target.Labels["job"] != "streamd" || !strings.HasPrefix(target.ScrapeURL, "http://"+monitor.service+":") {

@@ -95,7 +95,7 @@ func (harness *harness) metricsMedia() error {
 		return err
 	}
 	watch := harness.watchPlayback(players)
-	defer watch.finish(harness)
+	defer func() { _ = watch.finish(harness) }() // Cleanup on early failure; success is checked below.
 	if err := harness.metricSnapshot("initial", "initial", true); err != nil {
 		return err
 	}

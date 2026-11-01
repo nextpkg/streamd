@@ -205,7 +205,7 @@ func (manager *Manager) Watch(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 	if err := watcher.Add(filepath.Dir(manager.path)); err != nil {
 		return err
 	}

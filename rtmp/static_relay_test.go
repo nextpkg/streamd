@@ -46,7 +46,7 @@ func staticRelayPeer(test *testing.T, stall bool) *staticPeer {
 			go func() {
 				defer peer.workers.Done()
 				defer peer.peers.Delete(connection)
-				defer connection.Close()
+				defer func() { _ = connection.Close() }()
 				defer peer.closeOnce.Do(func() { close(peer.closed) })
 				peer.acceptOnce.Do(func() { close(peer.accepted) })
 				_ = connection.SetDeadline(time.Now().Add(5 * time.Second))

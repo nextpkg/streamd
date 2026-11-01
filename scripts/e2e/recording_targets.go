@@ -329,7 +329,7 @@ func (harness *harness) recordingTargetInventory(reader *s3.Client, cosStore *te
 	defer cancel()
 	inventory := map[string]int64{}
 	save := func(key string, body io.ReadCloser, size int64) error {
-		defer body.Close()
+		defer func() { _ = body.Close() }()
 		if !filepath.IsLocal(key) || (path.Ext(key) != ".flv" && path.Ext(key) != ".ts") {
 			return fmt.Errorf("unexpected recording object %s", key)
 		}
@@ -414,7 +414,7 @@ func (harness *harness) recordingTargetInventory(reader *s3.Client, cosStore *te
 			return nil, err
 		}
 		if response.StatusCode != http.StatusOK {
-			response.Body.Close()
+			_ = response.Body.Close()
 			return nil, errors.New("COS recording download failed")
 		}
 		if err := save(key, response.Body, response.ContentLength); err != nil {

@@ -36,23 +36,24 @@ func validateCloudCrashCallbacks(observations []callbackObservation, files []str
 			return nil, errors.New("invalid crash callback envelope")
 		}
 		counts[key+"/"+observation.Path+"/"+event]++
-		if observation.Path == "/publication" {
+		switch observation.Path {
+		case "/publication":
 			if len(payload) != 3 || (event != "OnPublish" && event != "OnPublishDone") {
 				return nil, errors.New("invalid crash publication event")
 			}
 			if occur >= float64(liveStarted) {
 				live = append(live, observation)
 			}
-		} else if observation.Path == "/recovered" {
+		case "/recovered":
 			live = append(live, observation)
-		} else if observation.Path == "/initial" {
+		case "/initial":
 			location, locationOK := payload["location"].(string)
 			connection, connectionOK := payload["connInfo"].(map[string]any)
 			app := strings.Split(key, "/")[0]
 			if event != "OnRecord" || !locationOK || !expectedCloud[location] || !connectionOK || connection["app"] != app || path.Dir(location) != "/"+key || path.Ext(location) != "."+app || payload["filename"] != path.Base(location) || len(payload) != 6 {
 				return nil, errors.New("paused or crashed cloud object falsely completed or changed identity")
 			}
-		} else {
+		default:
 			return nil, errors.New("unknown crash callback generation")
 		}
 	}

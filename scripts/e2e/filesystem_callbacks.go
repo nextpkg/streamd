@@ -22,7 +22,7 @@ func (harness *harness) filesystemCallbacks() *storageFaultCallbacks {
 	callbacks := &storageFaultCallbacks{}
 	callbacks.server = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method == http.MethodGet && request.URL.Path == "/ready" {
-			fmt.Fprint(writer, "ready")
+			_, _ = fmt.Fprint(writer, "ready") // The HTTP client validates the response; disconnects need no retry.
 			return
 		}
 		callbacks.receiver.serve(writer, request)

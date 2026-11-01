@@ -211,9 +211,10 @@ func (harness *harness) passerbyMedia() (failure error) {
 	}
 	for index := range harness.settings.Application {
 		app := &harness.settings.Application[index]
-		if app.AppName == "keep" {
+		switch app.AppName {
+		case "keep":
 			app.Passerby = true
-		} else if app.AppName == "stateful" || app.AppName == "hls" {
+		case "stateful", "hls":
 			app.Passerby = false
 		}
 	}

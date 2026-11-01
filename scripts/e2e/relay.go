@@ -27,7 +27,7 @@ func (harness *harness) relayRequest(method, action, pull, push string, expected
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	body, err := io.ReadAll(io.LimitReader(response.Body, 64*1024))
 	if err != nil {
 		return err

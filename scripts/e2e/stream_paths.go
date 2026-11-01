@@ -52,7 +52,7 @@ func rejectStreamPath(port int, app, instance, method string) error {
 	if err != nil {
 		return err
 	}
-	defer transport.Close()
+	defer func() { _ = transport.Close() }()
 	if err := transport.SetDeadline(time.Now().Add(2 * time.Second)); err != nil {
 		return err
 	}

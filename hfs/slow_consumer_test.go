@@ -71,7 +71,7 @@ func TestHTTPFLVIdleAbortDoesNotExpireUnwrittenResponse(test *testing.T) {
 	if len(response.deadlines) != 0 {
 		test.Fatal("idle response deadline poisoned keepalive")
 	}
-	if _, err := response.ResponseRecorder.WriteString(http.StatusText(http.StatusOK)); err != nil {
+	if _, err := response.WriteString(http.StatusText(http.StatusOK)); err != nil {
 		test.Fatal(err)
 	}
 }

@@ -11,8 +11,8 @@ import (
 
 func TestReaderCloseInterruptsBlockedFlush(test *testing.T) {
 	server, peer := net.Pipe()
-	defer server.Close()
-	defer peer.Close()
+	defer func() { _ = server.Close() }()
+	defer func() { _ = peer.Close() }()
 	protocol := NewConn(server, ConnBufSize)
 	if err := protocol.SetBegin(1); err != nil {
 		test.Fatal(err)
@@ -42,8 +42,8 @@ func (transport *observedAcknowledgement) Write(body []byte) (int, error) {
 
 func TestReaderCloseInterruptsAcknowledgementLock(test *testing.T) {
 	server, peer := net.Pipe()
-	defer server.Close()
-	defer peer.Close()
+	defer func() { _ = server.Close() }()
+	defer func() { _ = peer.Close() }()
 	transport := &observedAcknowledgement{Conn: server, writing: make(chan struct{})}
 	protocol := NewConn(transport, 1)
 	protocol.remoteWindowAckSize = 1

@@ -146,7 +146,7 @@ func (writer *completedQueryWriter) SetWriteDeadline(deadline time.Time) error {
 }
 func (writer *completedQueryWriter) FlushError() error {
 	writer.events = append(writer.events, "flush")
-	writer.ResponseRecorder.Flush()
+	writer.Flush()
 	return nil
 }
 
@@ -191,7 +191,7 @@ func TestAdminQueryConcurrentCloseAndAdmission(test *testing.T) {
 					return
 				}
 				_, err = io.Copy(io.Discard, response.Body)
-				response.Body.Close()
+				_ = response.Body.Close()
 				if err != nil {
 					test.Error(err)
 					return

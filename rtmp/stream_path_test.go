@@ -22,7 +22,7 @@ func TestRTMPRejectsUnsafeNamesBeforeSuccess(test *testing.T) {
 				if err != nil {
 					test.Fatal(err)
 				}
-				defer transport.Close()
+				defer func() { _ = transport.Close() }()
 				if err := transport.SetDeadline(time.Now().Add(time.Second)); err != nil {
 					test.Fatal(err)
 				}

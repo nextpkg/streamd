@@ -67,7 +67,7 @@ func (harness *harness) rotationMedia() (result error) {
 				statusMu.Unlock()
 				return
 			}
-			defer completed.Body.Close()
+			defer func() { _ = completed.Body.Close() }()
 			statusMu.Lock()
 			upstreamStatuses[request.URL.Path] = append(upstreamStatuses[request.URL.Path], completed.StatusCode)
 			statusMu.Unlock()

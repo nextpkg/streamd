@@ -12,13 +12,13 @@ func TestOriginClientAllocationOptionsAreSessionScoped(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	for _, options := range []ClientOptions{{BufferSize: 8192, SlabMin: 32 * 1024, SlabMax: 128 * 1024}, {BufferSize: 4096, SlabMin: 64 * 1024, SlabMax: 512 * 1024}} {
 		client, err := DialConnClient(context.Background(), "rtmp://"+listener.Addr().String()+"/source/sample", time.Second, options)
 		if err != nil {
 			test.Fatal(err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		if client.conn.rw.Reader.Size() != options.BufferSize || client.conn.rw.Writer.Size() != options.BufferSize || client.conn.slab.mark.min != options.SlabMin || client.conn.slab.mark.max != options.SlabMax {
 			test.Fatal("origin connection lost its configured buffer/slab settings")
 		}

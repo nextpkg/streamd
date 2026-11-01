@@ -63,7 +63,7 @@ func (trace *credentialTrace) response(response *http.Response) error {
 	defer trace.mu.Unlock()
 	if response.StatusCode == http.StatusNotFound && request.Method == http.MethodGet && request.URL.Query().Get("uploadId") == "" && strings.HasSuffix(request.URL.Path, ".json") && (strings.HasPrefix(request.URL.Path, "/test-bucket/flv/sample/.streamd-checkpoints/") || strings.HasPrefix(request.URL.Path, "/test-bucket/ts/sample/.streamd-checkpoints/")) {
 		body, err := io.ReadAll(io.LimitReader(response.Body, 65537))
-		response.Body.Close()
+		_ = response.Body.Close()
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (trace *credentialTrace) response(response *http.Response) error {
 	}
 	if request.Method == http.MethodPost && request.URL.Query().Has("uploads") {
 		body, err := io.ReadAll(io.LimitReader(response.Body, 65537))
-		response.Body.Close()
+		_ = response.Body.Close()
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,7 @@ func (harness *harness) recordingCredentials() (result error) {
 			trace.denied = append(trace.denied, credentialOperation{Method: request.Method, Credential: signingCredential(request), Status: http.StatusForbidden})
 			trace.mu.Unlock()
 			writer.WriteHeader(http.StatusForbidden)
-			fmt.Fprint(writer, "<Error><Code>AccessDenied</Code></Error>")
+			_, _ = fmt.Fprint(writer, "<Error><Code>AccessDenied</Code></Error>") // The HTTP client validates the response; disconnects need no retry.
 			return
 		}
 		proxy.ServeHTTP(writer, request)
@@ -400,12 +400,12 @@ func (harness *harness) downloadCredentialRecordings(reader *s3.Client, bucket s
 		}
 		filename := filepath.Join(harness.evidence, "recordings", filepath.FromSlash(key))
 		if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
-			response.Body.Close()
+			_ = response.Body.Close()
 			return err
 		}
 		file, err := os.Create(filename)
 		if err != nil {
-			response.Body.Close()
+			_ = response.Body.Close()
 			return err
 		}
 		count, copyErr := io.Copy(file, response.Body)

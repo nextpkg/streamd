@@ -29,7 +29,7 @@ func (harness *harness) redisPrepareChecks(container *redisContainer) error {
 		candidate.Revoke()
 		results[command] = err != nil && strings.Contains(err.Error(), "NOPERM")
 		if !results[command] {
-			failures = append(failures, fmt.Errorf("Redis candidate without %s permission accepted or wrong error: %v", command, err))
+			failures = append(failures, fmt.Errorf("redis candidate without %s permission accepted or wrong error: %v", command, err))
 		}
 	}
 	harness.results["redis_prepare_contract"] = results
@@ -88,7 +88,7 @@ func (harness *harness) redisPrepareMedia() (result error) {
 		}
 		report, err := harness.configuration()
 		if err != nil || report.Revision != 1 {
-			return fmt.Errorf("Redis %s candidate replaced old configuration: %+v: %v", command, report, err)
+			return fmt.Errorf("redis %s candidate replaced old configuration: %+v: %v", command, report, err)
 		}
 		if err := harness.redisRegistry(container, "rejected-"+command); err != nil {
 			return err
@@ -185,7 +185,7 @@ func (harness *harness) waitRedisSubscriptions(container *redisContainer, expect
 			return err
 		}
 	}
-	return fmt.Errorf("Redis subscription owners: got %v want %v", owners, expected)
+	return fmt.Errorf("redis subscription owners: got %v want %v", owners, expected)
 }
 
 func redisPreparationErrors(body string) error {

@@ -1,12 +1,5 @@
 package h264
 
-// 帧类型
-const (
-	iFrame byte = iota
-	pFrame
-	bFrame
-)
-
 // nalu 类型
 const (
 	naluTypeNotDefine byte = 0
