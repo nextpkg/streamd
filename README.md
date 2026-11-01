@@ -58,4 +58,4 @@ Use `make e2e-list` to list all scenarios, and `make e2e-<scenario>` for targete
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
