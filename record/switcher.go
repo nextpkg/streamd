@@ -7,7 +7,7 @@ import (
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/internal/appstate"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/record/flv"
 	"github.com/nextpkg/streamd/record/storage"
@@ -72,7 +72,7 @@ func (writer *switchingWriter) Write(frame *packet.Packet) error {
 			appstate.Report("recording", writer.Info().Key, writer.Info().UID, snapshot.Revision, "waiting_finalization")
 			return nil
 		}
-		log.Errorf("[%s]recording failed: %s", writer.Info().Key, err)
+		logging.Errorf("[%s]recording failed: %s", writer.Info().Key, err)
 		writer.fail(snapshot.Revision)
 	}
 	return nil
@@ -92,7 +92,7 @@ func (writer *switchingWriter) apply(snapshot *config.Config, timestamp uint32) 
 	}
 	fingerprint, err := recordingFingerprint(settings)
 	if err != nil {
-		log.Error("recording settings: ", err)
+		logging.Error("recording settings: ", err)
 		return
 	}
 	if writer.terminal != nil && (fingerprint != writer.fingerprint || writer.terminalFailed) && !writer.retire() {
@@ -132,7 +132,7 @@ func (writer *switchingWriter) apply(snapshot *config.Config, timestamp uint32) 
 		}
 		writer.start = timestamp
 		if err := writer.headers.Replay(writer.terminal); err != nil {
-			log.Error("recording sequence replay: ", err)
+			logging.Error("recording sequence replay: ", err)
 			writer.fail(snapshot.Revision)
 			return
 		}

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	web "github.com/nextpkg/streamd/internal/httpx"
+	"github.com/nextpkg/streamd/internal/httpx"
 )
 
 const queryIOBudget = 5 * time.Second
@@ -30,7 +30,7 @@ func (server *Server) managementRequest(handler http.HandlerFunc) http.HandlerFu
 			_ = controller.SetReadDeadline(time.Now())
 			_ = controller.SetWriteDeadline(time.Now().Add(queryIOBudget))
 			writer.Header().Set("Connection", "close")
-			web.NewWriter(writer).QuickSendJSON(http.StatusServiceUnavailable, "console is shutting down", nil)
+			httpx.NewWriter(writer).QuickSendJSON(http.StatusServiceUnavailable, "console is shutting down", nil)
 			return
 		}
 		if server.queryContext == nil {

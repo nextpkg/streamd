@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/nextpkg/streamd/base"
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 )
 
 // App RTMP直播Application
@@ -25,7 +25,7 @@ func (a *App) validate() error {
 	}
 
 	if !base.ValidAppName(a.AppName) {
-		return errors.New("invalid app_name")
+		return errutil.New("invalid app_name")
 	}
 
 	// static pull
@@ -36,17 +36,17 @@ func (a *App) validate() error {
 
 	err := a.HLS.validate()
 	if err != nil {
-		return errors.Wrapf(err, "validate hls failed,`app_name`='%s'", a.AppName)
+		return errutil.Wrapf(err, "validate hls failed,`app_name`='%s'", a.AppName)
 	}
 
 	err = a.Recorder.validate()
 	if err != nil {
-		return errors.Wrapf(err, "validate recorder failed,`app_name`='%s'", a.AppName)
+		return errutil.Wrapf(err, "validate recorder failed,`app_name`='%s'", a.AppName)
 	}
 
 	err = a.Event.validate()
 	if err != nil {
-		return errors.Wrapf(err, "validate event failed,`app_name`='%s'", a.AppName)
+		return errutil.Wrapf(err, "validate event failed,`app_name`='%s'", a.AppName)
 	}
 
 	return nil

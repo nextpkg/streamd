@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // option RTMP 连接选项
@@ -112,7 +112,7 @@ func (c *Conn) Write(cs *ChunkStream) error {
 
 		// 为避免客户端一直接收不过来，这里采用了丢包的策略
 		if c.sent > c.windowAckSize && c.sent > 3*ackSent {
-			log.Errorf("sent(%d)>3*ackSent(%d)", c.sent, ackSent)
+			logging.Errorf("sent(%d)>3*ackSent(%d)", c.sent, ackSent)
 			return nil
 		}
 	}
@@ -149,7 +149,7 @@ func (c *Conn) Close() error {
 	c.rLocker.Lock()
 	defer c.rLocker.Unlock()
 	if c.slab.stat.max > 0 || c.slab.stat.medium > 0 || c.slab.stat.min > 0 {
-		log.Tracef("Connection from %s is closed,slab stat,max:%d,medium:%d,min:%d",
+		logging.Tracef("Connection from %s is closed,slab stat,max:%d,medium:%d,min:%d",
 			c.RemoteAddr(), c.slab.stat.max, c.slab.stat.medium, c.slab.stat.min)
 	}
 	return err
@@ -218,13 +218,13 @@ func (c *Conn) setChunkSize(cs *ChunkStream) {
 
 	// 第一位必须是0
 	if (remoteChunkSize >> 31) != 0 {
-		log.Error("incorrect control value when setting chunk size")
+		logging.Error("incorrect control value when setting chunk size")
 		return
 	}
 
 	// 当前接收策略拒绝小于 128 字节的 chunk size。
 	if remoteChunkSize < 128 {
-		log.Error("incorrect chunk size ", remoteChunkSize)
+		logging.Error("incorrect chunk size ", remoteChunkSize)
 		return
 	}
 
@@ -235,7 +235,7 @@ func (c *Conn) setChunkSize(cs *ChunkStream) {
 
 	// 保存对端声明的块大小，供后续接收分块使用
 	c.remoteChunkSize = remoteChunkSize
-	log.Trace("remote chunk size is changed to ", remoteChunkSize)
+	logging.Trace("remote chunk size is changed to ", remoteChunkSize)
 }
 
 func (c *Conn) setPeerBandwidth(cs *ChunkStream) {
@@ -261,7 +261,7 @@ func (c *Conn) setPeerBandwidth(cs *ChunkStream) {
 		}
 	}
 
-	log.Trace("bandwidth is changed to ", bandwidth)
+	logging.Trace("bandwidth is changed to ", bandwidth)
 }
 
 // 处理控制消息
@@ -276,7 +276,7 @@ func (c *Conn) handleControlMsg(cs *ChunkStream) bool {
 		/**
 		当前仅记录 Abort Message，不处理其指定 chunk stream 的重组状态。
 		*/
-		log.Errorf("ignore unrealize abort message, stream id=%d", streamID)
+		logging.Errorf("ignore unrealize abort message, stream id=%d", streamID)
 		return true
 	case idAck:
 		atomic.StoreUint32(&c.ackSent, binary.BigEndian.Uint32(cs.data))
@@ -303,7 +303,7 @@ func (c *Conn) handleUserMsg(cs *ChunkStream) {
 	case setBufferLen:
 		// 事件数据的前4字节表示流ID,接下来的4字节表示缓冲区的大小(单位是毫秒)
 		if len(cs.data) != 10 {
-			log.Errorf("setBufferLen command data(%d) != 10", len(cs.data))
+			logging.Errorf("setBufferLen command data(%d) != 10", len(cs.data))
 			return
 		}
 
@@ -311,16 +311,16 @@ func (c *Conn) handleUserMsg(cs *ChunkStream) {
 		bufferLen := binary.BigEndian.Uint32(cs.data[6:10])
 
 		// bufferLen 是客户端请求的缓冲时长（毫秒），当前仅记录日志。
-		log.Tracef("unrealized setBufferLen command,streamID=%d,bufferLen=%d", streamID, bufferLen)
+		logging.Tracef("unrealized setBufferLen command,streamID=%d,bufferLen=%d", streamID, bufferLen)
 	case pingResponse:
 		// 事件数据是客户端接收到pingRequest请求时的4字节时间戳
 		if len(cs.data) != 6 {
-			log.Errorf("pingResponse command data(%d) != 6", len(cs.data))
+			logging.Errorf("pingResponse command data(%d) != 6", len(cs.data))
 			return
 		}
 
 		timestamp := binary.BigEndian.Uint32(cs.data[2:6])
-		log.Tracef("unrealized pingResponse command,timestamp=%d", timestamp)
+		logging.Tracef("unrealized pingResponse command,timestamp=%d", timestamp)
 	}
 }
 

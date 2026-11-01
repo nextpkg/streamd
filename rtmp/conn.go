@@ -11,7 +11,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/rtmp/core"
 	"sync/atomic"
 )
@@ -199,7 +199,7 @@ func (c *Conn) cleanStream() {
 
 			err := s.terminate(true)
 			if err != nil {
-				log.Error(err)
+				logging.Error(err)
 			}
 
 			c.stream.CompareAndDelete(key, s)
@@ -227,19 +227,19 @@ func discoveredRTMPURL(app, instance, advertisement string) (string, error) {
 func (c *Conn) findWithConfig(ds *sourceCache, info *base.Info, cfg *config.Config) bool {
 	app := cfg.GetApp(info.App)
 	if app == nil {
-		log.Warnf("app is nil,app name='%s'", info.App)
+		logging.Warnf("app is nil,app name='%s'", info.App)
 		return false
 	}
 
 	// 服务发现得到host，组成rtmp地址。初始状态下的源站会被标记为不可用
 	advice, err := cfg.Finder.FindAdvice(info.App, info.Instance)
 	if err != nil {
-		log.Errorf("[%s]Find advice failed.Err=%s", info.Key, err)
+		logging.Errorf("[%s]Find advice failed.Err=%s", info.Key, err)
 	}
 	if advice != "" {
 		endpoint, err := discoveredRTMPURL(info.App, info.Instance, advice)
 		if err != nil {
-			log.Errorf("[%s]invalid RTMP discovery endpoint: %v", info.Key, err)
+			logging.Errorf("[%s]invalid RTMP discovery endpoint: %v", info.Key, err)
 		} else {
 			ss := &sourceStatus{
 				usable:   false,
@@ -247,7 +247,7 @@ func (c *Conn) findWithConfig(ds *sourceCache, info *base.Info, cfg *config.Conf
 				pullHost: endpoint,
 			}
 			ds.data = append(ds.data, ss)
-			log.Infof("[%s]RTMP found target data source: %s", info.Key, endpoint)
+			logging.Infof("[%s]RTMP found target data source: %s", info.Key, endpoint)
 		}
 	}
 
@@ -292,12 +292,12 @@ func (c *Conn) InstallReader(r base.ReadCloser) {
 
 		err := ns.addReader(&StreamReader{r})
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 
 			// terminate new stream server(include all writers)
 			err = ns.terminate(true)
 			if err != nil {
-				log.Error(err)
+				logging.Error(err)
 			}
 		}
 
@@ -312,7 +312,7 @@ func (c *Conn) InstallReader(r base.ReadCloser) {
 	// terminate old stream server(without writers)
 	err := s.terminate(false)
 	if err != nil {
-		log.Trace(err)
+		logging.Trace(err)
 	}
 	if s.HasReader() {
 		<-s.dispatchDone
@@ -321,12 +321,12 @@ func (c *Conn) InstallReader(r base.ReadCloser) {
 
 	err = ns.addReader(&StreamReader{r})
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 
 		// terminate new stream server(with writers)
 		err = ns.terminate(true)
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return
 	}
@@ -334,7 +334,7 @@ func (c *Conn) InstallReader(r base.ReadCloser) {
 	// 在上面进行流服务关闭操作，需要重新插入任务
 	c.stream.Store(r.Info().Key, ns)
 
-	log.Infof("[%s]Target stream was republished successfully", r.Info().Key)
+	logging.Infof("[%s]Target stream was republished successfully", r.Info().Key)
 }
 
 // Checkin 最近一个writer的注册时间
@@ -386,7 +386,7 @@ func (c *Conn) close() {
 
 			err := s.terminate(true)
 			if err != nil {
-				log.Tracef("[%s]err:%s", s.info.Key, err)
+				logging.Tracef("[%s]err:%s", s.info.Key, err)
 			}
 			if s.HasReader() {
 				<-s.dispatchDone
@@ -415,7 +415,7 @@ func (c *Conn) StartRTMP(w ...EmbedWriter) (net.Listener, error) {
 		return nil, err
 	}
 
-	log.Info("Rtmp [tcp] Listening on ", cfg.Addr)
+	logging.Info("Rtmp [tcp] Listening on ", cfg.Addr)
 
 	rtmpSrv := NewRtmpServer(c, w...)
 	c.servers = append(c.servers, rtmpSrv)

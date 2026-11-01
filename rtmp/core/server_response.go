@@ -2,7 +2,7 @@ package core
 
 import (
 	"github.com/nextpkg/goav/amf"
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 )
 
 func (server *ConnServer) FinishPlayback() error {
@@ -57,7 +57,7 @@ func (s *ConnServer) rspPlay(cs *ChunkStream) error {
 
 	err := s.conn.SetBegin(1)
 	if err != nil {
-		return errors.Wrap(err, "set begin failed")
+		return errutil.Wrap(err, "set begin failed")
 	}
 
 	// 发送 start 命令开始一个流
@@ -68,7 +68,7 @@ func (s *ConnServer) rspPlay(cs *ChunkStream) error {
 
 	err = s.sendCmdMsg(cs.csid, cs.streamID, onStatus, 0, nil, event)
 	if err != nil {
-		return errors.Wrap(err, "send command message failed")
+		return errutil.Wrap(err, "send command message failed")
 	}
 
 	return nil

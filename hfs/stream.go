@@ -9,8 +9,8 @@ import (
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/container/flv"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/rtmp/core"
 )
@@ -50,7 +50,7 @@ func NewStream(app, instance string, w http.ResponseWriter) *core.Funnel {
 
 	err := s.mixer.SaveMetadata(obj)
 	if err != nil {
-		panic(errors.Wrap(err, "save metadata failed"))
+		panic(errutil.Wrap(err, "save metadata failed"))
 	}
 
 	return core.NewFunnel(s)
@@ -80,7 +80,7 @@ func (s *Stream) Write(p *packet.Packet) error {
 		err = s.mixer.SetFlvHeader()
 		s.started = err == nil
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 		}
 	})
 
@@ -90,7 +90,7 @@ func (s *Stream) Write(p *packet.Packet) error {
 
 	err = s.mixer.Mux(p, p.Baseline)
 	if err != nil {
-		return errors.Wrapf(err, "mux flv failed,key='%s'", s.Info().Key)
+		return errutil.Wrapf(err, "mux flv failed,key='%s'", s.Info().Key)
 	}
 	if flusher, ok := s.response.(http.Flusher); ok {
 		flusher.Flush()
@@ -127,7 +127,7 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 
 		// 暂只支持"H264"
 		if !vh.IsCodecAvc() {
-			log.Errorf("support H264 only,key='%s',code id=%d", s.Info().Key, vh.CodecID())
+			logging.Errorf("support H264 only,key='%s',code id=%d", s.Info().Key, vh.CodecID())
 			return false
 		}
 
@@ -136,7 +136,7 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 			s.videoHeaderSeen = true
 			err := s.mixer.SaveAVCHeader(p)
 			if err != nil {
-				log.Error(err)
+				logging.Error(err)
 			}
 
 			return repeated && s.started
@@ -150,7 +150,7 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 
 		// 只支持"aac"
 		if !ah.IsSoundAAC() {
-			log.Errorf("support AAC only,key='%s',sound format=%d",
+			logging.Errorf("support AAC only,key='%s',sound format=%d",
 				s.Info().Key, ah.SoundFormat())
 			return false
 		}
@@ -160,7 +160,7 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 			s.audioHeaderSeen = true
 			err := s.mixer.SaveAACHeader(p)
 			if err != nil {
-				log.Error(err)
+				logging.Error(err)
 			}
 
 			return repeated && s.started

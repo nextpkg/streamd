@@ -9,7 +9,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/rtmp/core"
 )
 
@@ -47,7 +47,7 @@ func (s *Server) Close() {
 		responses = append(responses, response)
 	}
 	var streams []*core.Funnel
-	log.Debug("hls server is closing")
+	logging.Debug("hls server is closing")
 	s.conn.Range(func(key, value interface{}) bool {
 		s.conn.Delete(key)
 
@@ -66,7 +66,7 @@ func (s *Server) Close() {
 	for _, response := range responses {
 		<-response.done
 	}
-	log.Debug("hls server is closed")
+	logging.Debug("hls server is closed")
 }
 
 // GetWriter 创建内嵌 HLS writer；同名流仍在运行时返回 nil。

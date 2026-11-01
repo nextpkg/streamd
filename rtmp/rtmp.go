@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/nextpkg/streamd/config"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/rtmp/core"
 )
 
@@ -56,8 +56,8 @@ func (s *Server) Serve(listener net.Listener) {
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
-			log.Trace(err)
-			log.Info("serve exit")
+			logging.Trace(err)
+			logging.Info("serve exit")
 			return
 		}
 
@@ -116,7 +116,7 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 			_ = conn.Close()
 		}
 		if e := recover(); e != nil {
-			log.Error(e)
+			logging.Error(e)
 			debug.PrintStack()
 		}
 	}()
@@ -128,13 +128,13 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 		closed := s.closed
 		s.mutex.Unlock()
 		if !closed {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return
 	}
 
 	if err := conn.SetDeadline(time.Now().Add(time.Duration(settings.ReadTimeout) * time.Second)); err != nil {
-		log.Debug(err)
+		logging.Debug(err)
 		return
 	}
 	server := core.NewConnServer(conn, settings.ChunkSize)
@@ -142,22 +142,22 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 	// 2. 交互控制指令
 	err = server.CommandLinkup()
 	if err != nil {
-		log.Debug(err)
+		logging.Debug(err)
 		return
 	}
 	if err := conn.SetDeadline(time.Time{}); err != nil {
-		log.Debug(err)
+		logging.Debug(err)
 		return
 	}
 
 	// 过滤APP
 	app := config.Get().GetApp(server.GetConnect().App)
 	if app == nil {
-		log.Infof("application is not configured,app='%s'", server.GetConnect().App)
+		logging.Infof("application is not configured,app='%s'", server.GetConnect().App)
 		return
 	}
 
-	log.Infof("[%s/%s]New %s from %s",
+	logging.Infof("[%s/%s]New %s from %s",
 		server.GetConnect().App, server.GetPublish().Name,
 		strings.ToUpper(server.Method()), conn.RemoteAddr())
 
@@ -177,7 +177,7 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 
 			writer, err := player.GetWriter(reader.Info().Copy(), server.GetConnect())
 			if err != nil {
-				log.Errorf("[%s/%s]Please wait for ten seconds because player returned: %s",
+				logging.Errorf("[%s/%s]Please wait for ten seconds because player returned: %s",
 					server.GetConnect().App, server.GetPublish().Name, err)
 				continue
 			}
@@ -191,7 +191,7 @@ func (s *Server) handleConn(conn *core.Conn, settings config.RTMP) {
 	case core.Play:
 		s.handler.InstallWriter(core.NewWriter(server))
 	default:
-		log.Error("only support PUBLISH and PLAY command")
+		logging.Error("only support PUBLISH and PLAY command")
 		return
 	}
 	handedOff = true

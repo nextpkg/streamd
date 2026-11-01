@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 const maxQueue = 4096
@@ -203,7 +203,7 @@ func (relay *DynamicRelay) StartContext(startupContext context.Context) (result 
 		workers.Wait()
 		close(session.done)
 	}()
-	log.Infof("Relay (%s) ===> (%s) is turned on", relay.pullURL, relay.pushURL)
+	logging.Infof("Relay (%s) ===> (%s) is turned on", relay.pullURL, relay.pushURL)
 	return nil
 }
 
@@ -241,7 +241,7 @@ func (relay *DynamicRelay) pull(session *relaySession, puller relayClient) {
 	for session.ctx.Err() == nil {
 		chunk := &ChunkStream{}
 		if err := puller.Read(chunk); err != nil {
-			log.Tracef("err=%s,pull URL=%s", err, relay.pullURL)
+			logging.Tracef("err=%s,pull URL=%s", err, relay.pullURL)
 			return
 		}
 		select {
@@ -249,7 +249,7 @@ func (relay *DynamicRelay) pull(session *relaySession, puller relayClient) {
 			return
 		case session.queue <- chunk:
 		default:
-			log.Errorf("packet queue saturated,puller='%s'", relay.pullURL)
+			logging.Errorf("packet queue saturated,puller='%s'", relay.pullURL)
 			return
 		}
 	}
@@ -262,7 +262,7 @@ func (relay *DynamicRelay) push(session *relaySession, pusher relayClient) {
 			return
 		case chunk := <-session.queue:
 			if err := pusher.Write(chunk); err != nil {
-				log.Tracef("err=%s,push URL=%s", err, relay.pushURL)
+				logging.Tracef("err=%s,push URL=%s", err, relay.pushURL)
 				return
 			}
 		}

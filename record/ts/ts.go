@@ -7,7 +7,7 @@ import (
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/container/ts"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/record/storage"
 	"github.com/nextpkg/streamd/rtmp/core"
@@ -63,7 +63,7 @@ func (s *Stream) Write(p *packet.Packet) error {
 		err := s.store.WriteAt(p.Baseline, s.ts.Bytes(), s.mixer.NextTimestamp())
 		if err != nil {
 			// 不返回错误，避免存储故障导致实时视频故障
-			log.Error(err)
+			logging.Error(err)
 			return nil
 		}
 
@@ -84,13 +84,13 @@ func (s *Stream) Write(p *packet.Packet) error {
 
 	err := s.mixer.Update(p, pktTS, avcTS)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 		return nil
 	}
 
 	err = s.mixer.Mux(p)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 		return nil
 	}
 
@@ -103,13 +103,13 @@ func (s *Stream) After() {
 
 	err := s.store.Write(s.ts.Bytes(), s.mixer.NextTimestamp())
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 	}
 
 	// 退出时等待存储收尾，确保关闭错误在释放资源前被记录。
 	err = s.store.Close(true)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 	}
 }
 
@@ -124,7 +124,7 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 	s.cache.isKeyframe = false
 	media, err := packet.ClassifyMedia(p)
 	if err != nil {
-		log.Errorf("%s,key='%s'", err, s.Info().Key)
+		logging.Errorf("%s,key='%s'", err, s.Info().Key)
 		return false
 	}
 	switch media.Kind {
@@ -135,12 +135,12 @@ func (s *Stream) unpack(p *packet.Packet) bool {
 		s.cache.composition = uint32(media.CompositionTime)
 	case packet.MediaAVCHeader:
 		if err := s.mixer.SaveAVCHeader(p); err != nil {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return false
 	case packet.MediaAACHeader:
 		if err := s.mixer.SaveAACHeader(p); err != nil {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return false
 	}
@@ -157,7 +157,7 @@ func (s *Stream) prepare(canSplit bool) bool {
 		// 此处block=false有利于快速生成新的分片，但如果此时进程退出将可能导致有部分碎片未能及时写入存储，因此可能会有数据丢失
 		err := s.store.Close(false)
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 			return false
 		}
 	}
@@ -171,7 +171,7 @@ func (s *Stream) prepare(canSplit bool) bool {
 	err := s.store.Open()
 	if err != nil {
 		if !s.store.WaitingFinalization() {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return false
 	}
@@ -185,12 +185,12 @@ func (s *Stream) prepare(canSplit bool) bool {
 
 	err = s.mixer.SaveMetadata(obj)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 	}
 
 	s.resumeOffset, err = s.store.Resume(s.mixer.Resume, s.mixer.ResumeAt)
 	if err != nil {
-		log.Error(err)
+		logging.Error(err)
 		return false
 	}
 

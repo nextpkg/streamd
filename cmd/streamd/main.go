@@ -17,7 +17,7 @@ import (
 	"github.com/nextpkg/streamd/hfs"
 	"github.com/nextpkg/streamd/hls"
 	"github.com/nextpkg/streamd/internal/httpx"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 	"github.com/nextpkg/streamd/proxy"
 	"github.com/nextpkg/streamd/record"
@@ -38,7 +38,7 @@ func main() {
 		return
 	}
 	if err := config.SetSlabOverrides(*slabMin, *slabMax); err != nil {
-		log.Error(err)
+		logging.Error(err)
 		os.Exit(1)
 	}
 	if *check {
@@ -47,7 +47,7 @@ func main() {
 			_, err = config.Decode(data)
 		}
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 			os.Exit(1)
 		}
 		fmt.Println("configuration valid")
@@ -56,7 +56,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	if err := run(ctx, *filename); err != nil {
-		log.Error(err)
+		logging.Error(err)
 		os.Exit(1)
 	}
 }
@@ -100,7 +100,7 @@ func run(ctx context.Context, filename string) error {
 	reload := make(chan os.Signal, 1)
 	signal.Notify(reload, syscall.SIGHUP)
 	defer signal.Stop(reload)
-	log.Infof("HTTP listening on %s; configuration version %d", server.Addr, manager.Version())
+	logging.Infof("HTTP listening on %s; configuration version %d", server.Addr, manager.Version())
 running:
 	for {
 		select {
@@ -113,7 +113,7 @@ running:
 			break running
 		case <-reload:
 			if failure := manager.Reload(); failure != nil {
-				log.Error("configuration reload rejected: ", failure)
+				logging.Error("configuration reload rejected: ", failure)
 			}
 		}
 	}

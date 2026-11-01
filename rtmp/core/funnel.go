@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/nextpkg/streamd/base"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 	"github.com/nextpkg/streamd/packet"
 	"sync/atomic"
@@ -92,7 +92,7 @@ func (f *Funnel) processor() {
 		// 将数据传给客户端，如果客户端返回错误则认为是不可恢复的错误，直接关闭客户端
 		err := f.Terminal.Write(&pkt)
 		if err != nil {
-			log.Debug(err)
+			logging.Debug(err)
 			f.Close()
 			break
 		}

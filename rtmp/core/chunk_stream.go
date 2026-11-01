@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/nextpkg/goav/amf"
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 	"github.com/nextpkg/streamd/packet"
 )
 
@@ -36,7 +36,7 @@ func (cs *ChunkStream) intact() bool {
 // 新建一个chunk data
 func (cs *ChunkStream) newChunkData(slab *Slab) error {
 	if cs.length == 0 {
-		return errors.New("chunk length==0")
+		return errutil.New("chunk length==0")
 	}
 
 	cs.got = false
@@ -45,7 +45,7 @@ func (cs *ChunkStream) newChunkData(slab *Slab) error {
 
 	cs.data = slab.Get(cs.remain)
 	if cs.data == nil {
-		return errors.New("get nil slab")
+		return errutil.New("get nil slab")
 	}
 
 	return nil
@@ -272,7 +272,7 @@ func (cs *ChunkStream) handleFmt3(r *ReadWriter, slab *Slab) error {
 // 读取一个分块；同一条消息可能需要多次调用才能重组完成。
 func (cs *ChunkStream) readChunk(r *ReadWriter, chunkSize uint32, slab *Slab) error {
 	if chunkSize <= 0 {
-		return errors.New("chunk size<=0")
+		return errutil.New("chunk size<=0")
 	}
 
 	// 接收块类型3, 无条件(可多次出现)
@@ -290,19 +290,19 @@ func (cs *ChunkStream) readChunk(r *ReadWriter, chunkSize uint32, slab *Slab) er
 	switch cs.formatTmp {
 	case 0:
 		if err := cs.handleFmt0(r, slab); err != nil {
-			return errors.Wrap(err, "handle format 0")
+			return errutil.Wrap(err, "handle format 0")
 		}
 	case 1:
 		if err := cs.handleFmt1(r, slab); err != nil {
-			return errors.Wrap(err, "handle format 1")
+			return errutil.Wrap(err, "handle format 1")
 		}
 	case 2:
 		if err := cs.handleFmt2(r, slab); err != nil {
-			return errors.Wrap(err, "handle format 2")
+			return errutil.Wrap(err, "handle format 2")
 		}
 	case 3:
 		if err := cs.handleFmt3(r, slab); err != nil {
-			return errors.Wrap(err, "handle format 3")
+			return errutil.Wrap(err, "handle format 3")
 		}
 	default:
 		return fmt.Errorf("invalid chunk format=%d", cs.format)
@@ -318,7 +318,7 @@ func (cs *ChunkStream) readChunk(r *ReadWriter, chunkSize uint32, slab *Slab) er
 	buf := cs.data[cs.index : cs.index+size]
 
 	if _, err := r.Read(buf); err != nil {
-		return errors.Wrapf(err, "read %d byte from connection", size)
+		return errutil.Wrapf(err, "read %d byte from connection", size)
 	}
 
 	cs.index += size
@@ -439,7 +439,7 @@ END:
 // 构造chunk, 将chunk写入缓存中，chunk-0后面跟着chunk-3。chunkSize: 每个chunk除header外的最大负载
 func (cs *ChunkStream) writeChunk(w *ReadWriter, chunkSize uint32) error {
 	if chunkSize <= 0 {
-		return errors.New("chunk size<=0")
+		return errutil.New("chunk size<=0")
 	}
 
 	switch cs.typeID {
@@ -486,7 +486,7 @@ func (cs *ChunkStream) writeChunk(w *ReadWriter, chunkSize uint32) error {
 		}
 
 		if increment < 0 {
-			return errors.New("overflow chunk size")
+			return errutil.New("overflow chunk size")
 		}
 
 		// 写入chunk数据
@@ -503,7 +503,7 @@ func (cs *ChunkStream) writeChunk(w *ReadWriter, chunkSize uint32) error {
 	}
 
 	if writtenLen != cs.length {
-		return errors.New("incomplete chunk")
+		return errutil.New("incomplete chunk")
 	}
 
 	return nil

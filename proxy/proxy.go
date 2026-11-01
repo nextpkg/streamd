@@ -3,7 +3,7 @@ package proxy
 import (
 	"context"
 	"io"
-	standardlog "log"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/nextpkg/streamd/base"
 	"github.com/nextpkg/streamd/config"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 type configurationKey struct{}
@@ -32,7 +32,7 @@ type Server struct {
 type proxyLog struct{}
 
 func (proxyLog) Write(message []byte) (int, error) {
-	log.Warn("proxy transport: ", strings.TrimSpace(string(message)))
+	logging.Warn("proxy transport: ", strings.TrimSpace(string(message)))
 	return len(message), nil
 }
 
@@ -153,33 +153,33 @@ func (server *Server) relay(response http.ResponseWriter, request *http.Request)
 			result, err := client.Do(callback)
 			if err != nil {
 				if request.Context().Err() == nil {
-					log.Error("proxy callback: ", err)
+					logging.Error("proxy callback: ", err)
 				}
 				return
 			}
 			defer func() { _ = result.Body.Close() }()
 			if _, err := io.Copy(response, io.LimitReader(result.Body, 1024*1024)); err != nil && request.Context().Err() == nil {
-				log.Error("proxy callback body: ", err)
+				logging.Error("proxy callback body: ", err)
 			}
 		}
 		return
 	}
 	endpoint, err := config.DiscoveryEndpoint(backend, "http")
 	if err != nil {
-		log.Error("invalid HTTP discovery endpoint: ", err)
+		logging.Error("invalid HTTP discovery endpoint: ", err)
 		http.Error(response, "source record unavailable", http.StatusBadGateway)
 		return
 	}
 	address := &url.URL{Scheme: "http", Host: endpoint}
 	forward := httputil.NewSingleHostReverseProxy(address)
 	forward.Transport = server.transport
-	forward.ErrorLog = standardlog.New(proxyLog{}, "", 0)
+	forward.ErrorLog = log.New(proxyLog{}, "", 0)
 	forward.FlushInterval = -1
 	forward.ErrorHandler = func(response http.ResponseWriter, request *http.Request, err error) {
 		if request.Context().Err() != nil {
 			return
 		}
-		log.Error("upstream HTTP failure: ", err)
+		logging.Error("upstream HTTP failure: ", err)
 		http.Error(response, "upstream unavailable", http.StatusBadGateway)
 	}
 	forward.ServeHTTP(response, request)

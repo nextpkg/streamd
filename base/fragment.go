@@ -4,7 +4,7 @@ import (
 	"math"
 	"strconv"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 // Fragment 分片
@@ -49,7 +49,7 @@ func (f *Fragment) Update(ts uint32) {
 
 	// 发生时钟异常
 	if !f.isNewer(ts, f.initTime) {
-		log.Warn("Not continuous timestamp")
+		logging.Warn("Not continuous timestamp")
 		return
 	}
 

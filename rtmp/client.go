@@ -5,7 +5,7 @@ import (
 	"github.com/nextpkg/streamd/rtmp/core"
 	"time"
 
-	errors "github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/errutil"
 )
 
 // Client 客户端
@@ -31,14 +31,14 @@ func (c *Client) GetHandler() Handler {
 func (c *Client) dial(url, method string) error {
 	conn := core.NewConnClientByURL(url, time.Duration(config.Get().RTMP.DialTimeout)*time.Second)
 	if conn == nil {
-		return errors.New("init client connection failed")
+		return errutil.New("init client connection failed")
 	}
 
 	// 客户端
 	err := conn.Start(method)
 	if err != nil {
 		_ = conn.Close()
-		return errors.Wrap(err, "client start failed")
+		return errutil.Wrap(err, "client start failed")
 	}
 
 	switch method {

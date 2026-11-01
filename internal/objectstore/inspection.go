@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 const maxPendingInspections = 256
@@ -100,7 +100,7 @@ func (client *Client) ScheduleInspection(key string, segment int64, expired func
 	}
 	if len(state.jobs) >= maxPendingInspections {
 		state.stats.Rejected++
-		log.Warnf("recording inspection queue full; future recordings will retry")
+		logging.Warnf("recording inspection queue full; future recordings will retry")
 		return false
 	}
 	delay := inspectionJitter()
@@ -138,9 +138,9 @@ func (client *Client) runInspection(state *inspectionState, job inspectionKey, e
 		}
 		client.inspectionMu.Unlock()
 		if err != nil && !errors.Is(err, context.Canceled) {
-			log.Warnf("recording inspection failed prefix=%s: %v", job.prefix, err)
+			logging.Warnf("recording inspection failed prefix=%s: %v", job.prefix, err)
 		} else if err == nil {
-			log.Infof("recording inspection completed prefix=%s finalized=%d skipped=%d", job.prefix, result.Finalized, result.Skipped)
+			logging.Infof("recording inspection completed prefix=%s finalized=%d skipped=%d", job.prefix, result.Finalized, result.Skipped)
 		}
 	}()
 	select {

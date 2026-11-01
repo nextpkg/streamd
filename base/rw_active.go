@@ -3,7 +3,7 @@ package base
 import (
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
 	"sync/atomic"
 )
@@ -101,7 +101,7 @@ func (rw *Active) IsTimeout() bool {
 		return false
 	}
 
-	log.Errorf("rtmp IO timeout. elapse=%ds. limit=%ds", elapse, tmo)
+	logging.Errorf("rtmp IO timeout. elapse=%ds. limit=%ds", elapse, tmo)
 	return true
 }
 

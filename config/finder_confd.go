@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -127,7 +127,7 @@ func (f *Finder) storeContext(ctx context.Context, c *confd) error {
 	vars, err := f.makeCacheContext(ctx, c.prefix)
 	if err != nil {
 		if f.runtime.ctx.Err() == nil {
-			log.Error("Redis refresh: ", err)
+			logging.Error("Redis refresh: ", err)
 		}
 		return err
 	}

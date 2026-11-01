@@ -14,7 +14,7 @@ import (
 	"github.com/nextpkg/streamd/config"
 	"github.com/nextpkg/streamd/control"
 	"github.com/nextpkg/streamd/gop"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/metrics"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/rtmp/core"
@@ -215,7 +215,7 @@ func (s *Stream) register() {
 						return
 					default:
 					}
-					log.Errorf("[%s]Find Advice failed.Err=%s", s.info.Key, err)
+					logging.Errorf("[%s]Find Advice failed.Err=%s", s.info.Key, err)
 					continue
 				}
 
@@ -225,7 +225,7 @@ func (s *Stream) register() {
 					continue
 				}
 				if advice != "" {
-					log.Infof("[%s]Source IP is changed", s.info.Key)
+					logging.Infof("[%s]Source IP is changed", s.info.Key)
 				}
 
 				finder.Register(s.info.App, s.info.Instance)
@@ -273,7 +273,7 @@ func (s *Stream) staticRelay() {
 			defer ticker.Stop()
 			for ctx.Err() == nil {
 				if err := relay.StartContext(ctx); err != nil && ctx.Err() == nil {
-					log.Error(err)
+					logging.Error(err)
 					relay.RenewConnection()
 				}
 				select {
@@ -325,7 +325,7 @@ func (s *Stream) terminate(closeWriter bool) error {
 		s.inside.event.onPublishDone()
 	}
 
-	log.Infof("[%s]Client terminated", s.info.Key)
+	logging.Infof("[%s]Client terminated", s.info.Key)
 	return nil
 }
 
@@ -359,12 +359,12 @@ func (s *Stream) readPacket() *packet.Packet {
 
 	if err != nil {
 		if !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			log.Errorf("[%s]Read error: %s", s.info.Key, err)
+			logging.Errorf("[%s]Read error: %s", s.info.Key, err)
 		}
 
 		err = s.terminate(true)
 		if err != nil {
-			log.Debugf("[%s]Terminate error: %s", s.info.Key, err)
+			logging.Debugf("[%s]Terminate error: %s", s.info.Key, err)
 		}
 		return nil
 	}
@@ -379,7 +379,7 @@ func (s *Stream) dispatch(p *packet.Packet) {
 	// 缓存数据包
 	err := s.writeCache(p)
 	if err != nil {
-		log.Errorf("[%s]Write to cache failed: %s", s.info.Key, err)
+		logging.Errorf("[%s]Write to cache failed: %s", s.info.Key, err)
 	}
 
 	// 向所有消费者发送数据
@@ -398,14 +398,14 @@ func (s *Stream) dispatch(p *packet.Packet) {
 				switch err {
 				case core.ErrWriterWasCanceled:
 					s.removeWriter(w, key, true)
-					log.Debugf(msg, arg...)
+					logging.Debugf(msg, arg...)
 				case core.ErrQueueSaturated:
 					if info.IsExternal {
 						s.removeWriter(w, key, true)
 					}
 					fallthrough
 				default:
-					log.Errorf(msg, arg...)
+					logging.Errorf(msg, arg...)
 				}
 			}
 
@@ -415,7 +415,7 @@ func (s *Stream) dispatch(p *packet.Packet) {
 		// 先发送缓存的 GOP，再发送后续实时包
 		err := s.inside.cache.SendTo(w)
 		if err != nil && err != core.ErrWriterWasCanceled {
-			log.Errorf("[%s]SendTo failed:%s", s.info.Key, err)
+			logging.Errorf("[%s]SendTo failed:%s", s.info.Key, err)
 		}
 		if err != nil && w.Info().IsExternal {
 			s.removeWriter(w, key, true)
@@ -450,7 +450,7 @@ func (s *Stream) migrateTo(dst *Stream) {
 		err := dst.addWriter(w)
 		if err != nil {
 			w.Close()
-			log.Error(err)
+			logging.Error(err)
 		}
 		return true
 	})
@@ -475,7 +475,7 @@ func (s *Stream) restate() {
 		}
 
 		if s.rConn != nil && s.rConn.IsTimeout() {
-			log.Infof("[%s]Source connection is timeout", s.rConn.Info().Key)
+			logging.Infof("[%s]Source connection is timeout", s.rConn.Info().Key)
 			s.RUnlock()
 			continue
 		}
@@ -490,7 +490,7 @@ func (s *Stream) restate() {
 			}
 
 			if w.IsTimeout() {
-				log.Errorf("[%s]Writer is timeout", w.Info().Key)
+				logging.Errorf("[%s]Writer is timeout", w.Info().Key)
 				s.removeWriter(w, key, true)
 				return true
 			}
@@ -549,7 +549,7 @@ func (s *Stream) health() bool {
 		return true
 	}
 
-	log.Infof("[%s]Data source idling over %ds.", s.info.Key, overtime)
+	logging.Infof("[%s]Data source idling over %ds.", s.info.Key, overtime)
 
 	return false
 }

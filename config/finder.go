@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -231,7 +231,7 @@ func (finder *Finder) Keepalive(app, instance string) bool {
 	}
 	extended, err := finder.redisClient().Expire(finder.runtime.ctx, cache.prefix+instance, finder.Expire*time.Second).Result()
 	if err != nil {
-		log.Error("Redis keepalive: ", err)
+		logging.Error("Redis keepalive: ", err)
 	}
 	return extended && err == nil
 }
@@ -252,11 +252,11 @@ func (finder *Finder) Register(app, instance string) {
 		return
 	}
 	if err := finder.redisClient().Set(finder.runtime.ctx, cache.prefix+instance, finder.GetAdvice(), finder.Expire*time.Second).Err(); err != nil {
-		log.Error("Redis register: ", err)
+		logging.Error("Redis register: ", err)
 		return
 	}
 	if err := finder.redisClient().Publish(finder.runtime.ctx, cache.channels, "set").Err(); err != nil {
-		log.Error("Redis notify: ", err)
+		logging.Error("Redis notify: ", err)
 	}
 }
 
@@ -274,11 +274,11 @@ func (finder *Finder) Deregister(app, instance string) {
 	cleanup, cancel := context.WithTimeout(context.WithoutCancel(finder.runtime.ctx), 2*time.Second)
 	defer cancel()
 	if err := finder.redisClient().Del(cleanup, cache.prefix+instance).Err(); err != nil {
-		log.Error("Redis deregister: ", err)
+		logging.Error("Redis deregister: ", err)
 		return
 	}
 	if err := finder.redisClient().Publish(cleanup, cache.channels, "del").Err(); err != nil {
-		log.Error("Redis notify: ", err)
+		logging.Error("Redis notify: ", err)
 	}
 }
 

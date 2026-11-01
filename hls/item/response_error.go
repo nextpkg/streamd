@@ -6,7 +6,7 @@ import (
 	"net"
 	"syscall"
 
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/logging"
 )
 
 func clientDisconnected(err error) bool {
@@ -15,8 +15,8 @@ func clientDisconnected(err error) bool {
 
 func logResponseError(err error) {
 	if clientDisconnected(err) {
-		log.Debug("HLS client disconnected: ", err)
+		logging.Debug("HLS client disconnected: ", err)
 		return
 	}
-	log.Error(err)
+	logging.Error(err)
 }

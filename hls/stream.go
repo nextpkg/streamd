@@ -13,8 +13,8 @@ import (
 	"github.com/nextpkg/streamd/container/ts"
 	"github.com/nextpkg/streamd/hls/item"
 	"github.com/nextpkg/streamd/internal/appstate"
-	errors "github.com/nextpkg/streamd/internal/errutil"
-	log "github.com/nextpkg/streamd/internal/logging"
+	"github.com/nextpkg/streamd/internal/errutil"
+	"github.com/nextpkg/streamd/internal/logging"
 	"github.com/nextpkg/streamd/packet"
 	"github.com/nextpkg/streamd/rtmp/core"
 )
@@ -91,7 +91,7 @@ func NewStream(info *base.Info) *core.Funnel {
 
 	err := ret.mixer.SaveMetadata(obj)
 	if err != nil {
-		panic(errors.Wrap(err, "save metadata failed"))
+		panic(errutil.Wrap(err, "save metadata failed"))
 	}
 
 	return core.NewFunnel(ret)
@@ -124,7 +124,7 @@ func (s *Stream) Write(p *packet.Packet) error {
 
 	err := s.mixer.Mux(p)
 	if err != nil {
-		log.Errorf("err=%s,key=%s", err, s.Info().Key)
+		logging.Errorf("err=%s,key=%s", err, s.Info().Key)
 		return nil
 	}
 
@@ -172,7 +172,7 @@ func (s *Stream) applyConfiguration(snapshot *config.Config) {
 		if next.Enable {
 			s.m3u8.MarkLive(!wasActive)
 			if err := s.mixer.SetTsHeader(); err != nil {
-				log.Error("HLS configuration boundary: ", err)
+				logging.Error("HLS configuration boundary: ", err)
 			}
 		} else {
 			s.m3u8.MarkEnd()
@@ -242,7 +242,7 @@ func (s *Stream) Discontinuity() {
 	s.fragment.Create()
 	s.m3u8.MarkLive(true)
 	if err := s.mixer.SetTsHeader(); err != nil {
-		log.Error("HLS source transition: ", err)
+		logging.Error("HLS source transition: ", err)
 	}
 }
 
@@ -259,7 +259,7 @@ func (s *Stream) separate(p *packet.Packet) bool {
 	s.cache.isKeyframe = false
 	media, err := packet.ClassifyMedia(p)
 	if err != nil {
-		log.Errorf("%s,key='%s'", err, s.Info().Key)
+		logging.Errorf("%s,key='%s'", err, s.Info().Key)
 		return false
 	}
 	switch media.Kind {
@@ -270,12 +270,12 @@ func (s *Stream) separate(p *packet.Packet) bool {
 		s.cache.composition = uint32(media.CompositionTime)
 	case packet.MediaAVCHeader:
 		if err := s.mixer.SaveAVCHeader(p); err != nil {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return false
 	case packet.MediaAACHeader:
 		if err := s.mixer.SaveAACHeader(p); err != nil {
-			log.Error(err)
+			logging.Error(err)
 		}
 		return false
 	}
@@ -295,7 +295,7 @@ func (s *Stream) split(timestamp uint32) bool {
 
 		err := s.mixer.SetTsHeader()
 		if err != nil {
-			log.Errorf("err=%s,key=%s", err, s.Info().Key)
+			logging.Errorf("err=%s,key=%s", err, s.Info().Key)
 		}
 	}
 
@@ -309,7 +309,7 @@ func (s *Stream) update(p *packet.Packet) bool {
 	// update pts
 	err := s.mixer.Update(p, p.Baseline, s.cache.composition)
 	if err != nil {
-		log.Errorf("err=%s,key=%s", err, s.Info().Key)
+		logging.Errorf("err=%s,key=%s", err, s.Info().Key)
 		return false
 	}
 
