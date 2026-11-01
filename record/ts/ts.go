@@ -106,10 +106,7 @@ func (s *Stream) After() {
 		log.Error(err)
 	}
 
-	// 弱网环境下，block=true可能会导致同个服务有多个相同的recorder实例，引起录制混乱
-	// 遇到类似问题可优先解决网络问题，降低单服务器负载或提高存储服务能力
-	//
-	// block=false会导致文件还没被正常关闭，进程就退出了，可能会导致文件缺失
+	// 退出时等待存储收尾，确保关闭错误在释放资源前被记录。
 	err = s.store.Close(true)
 	if err != nil {
 		log.Error(err)

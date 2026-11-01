@@ -32,6 +32,8 @@ Health and readiness are available at `/healthz` and `/readyz`; metrics are avai
 
 ## Design
 
+See the [design guide](docs/README.md) for architecture diagrams, memory ownership, and measured performance comparisons.
+
 Each RTMP connection uses a slab allocator for incoming media. Codec headers and GOP caches provide playback startup data, while consumers share media payloads and maintain their own delivery state. Bounded queues isolate slow consumers. Publisher takeover can retain connected viewers, and origin connections are reused for concurrent playback requests.
 
 HLS stores completed segments as immutable byte snapshots and retains recently issued segments for a bounded grace period. Recording batches writes at keyframes and finalizes detached segments asynchronously with bounded concurrency. Storage inspection uses delayed scheduling and bounded workers to keep maintenance separate from live delivery.

@@ -443,7 +443,7 @@ func (s *Stream) migrateTo(dst *Stream) {
 			s.client.count.Add(-1)
 		}
 
-		// 1. 新生产者流的PTS从0开始，我们需要记录消费者的PTS，使消费者的PTS在迁移前后是连续的
+		// 1. 记录消费者的 PTS，供新生产者时间轴重置后保持迁移前后连续
 		w.RebaseTime()
 		w.hasGOP = false
 

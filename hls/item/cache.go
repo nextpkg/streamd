@@ -64,7 +64,7 @@ func (t *TsItem) Response(w http.ResponseWriter) bool {
 // TsItemCache 缓存可用TS列表
 type TsItemCache struct {
 	tsIndex           *list.List // 存放 <sequence>, 以保证能顺序读取到"tsStore"的内容
-	tsStore           sync.Map   // 存放 <sequence, *tsItem>（注意GO特征，即使顺序读取, "key"也不稳定）
+	tsStore           sync.Map   // 按 sequence 查找切片；遍历顺序由 tsIndex 维护
 	playlistLength    int64      // M3U8 中含有ts的数量
 	duration          atomic.Int64
 	isEnd             atomic.Bool

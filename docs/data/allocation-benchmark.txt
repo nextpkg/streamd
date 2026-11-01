@@ -1,0 +1,24 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/nextpkg/streamd/rtmp/core
+cpu: Apple M4
+BenchmarkMediaAllocationComparison/128B/make    	 9500307	        24.85 ns/op	     128 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/128B/make    	 8835195	        27.23 ns/op	     128 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/128B/make    	 9759849	        25.00 ns/op	     128 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/128B/slab    	24963484	         9.739 ns/op	     128 B/op	       0 allocs/op
+BenchmarkMediaAllocationComparison/128B/slab    	24601506	         9.773 ns/op	     128 B/op	       0 allocs/op
+BenchmarkMediaAllocationComparison/128B/slab    	24703215	         9.903 ns/op	     128 B/op	       0 allocs/op
+BenchmarkMediaAllocationComparison/1KiB/make    	 3192346	        71.10 ns/op	    1024 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/1KiB/make    	 3329140	        72.73 ns/op	    1024 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/1KiB/make    	 3292105	        74.86 ns/op	    1024 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/1KiB/slab    	 5010751	        48.20 ns/op	    1024 B/op	       0 allocs/op
+BenchmarkMediaAllocationComparison/1KiB/slab    	 5095270	        48.48 ns/op	    1024 B/op	       0 allocs/op
+BenchmarkMediaAllocationComparison/1KiB/slab    	 5004856	        48.93 ns/op	    1024 B/op	       0 allocs/op
+BenchmarkMediaAllocationComparison/400KiB/make  	   15865	     15021 ns/op	  409600 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/400KiB/make  	   46680	     24148 ns/op	  409600 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/400KiB/make  	   10000	     21435 ns/op	  409600 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/400KiB/slab  	   10000	     27373 ns/op	  409600 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/400KiB/slab  	   11502	     20206 ns/op	  409600 B/op	       1 allocs/op
+BenchmarkMediaAllocationComparison/400KiB/slab  	   12212	     21627 ns/op	  409600 B/op	       1 allocs/op
+PASS
+ok  	github.com/nextpkg/streamd/rtmp/core	7.130s

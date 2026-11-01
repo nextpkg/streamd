@@ -20,7 +20,7 @@ type Reader struct {
 	*base.Stat
 	info       *base.Info
 	flv        *flv.Demuxer    // RTMP解复用
-	conn       readWriteCloser // 读写工具，注意，读写应该分别拥有独立缓冲区
+	conn       readWriteCloser // 底层连接的读、写方向各自使用独立缓冲区
 	prefetched *packet.Packet
 	closeOnce  sync.Once
 }
@@ -151,7 +151,7 @@ type Writer struct {
 	closeOnce sync.Once
 	readDone  chan struct{}
 
-	// 数据源，客户端 or 服务端 连接, 注意，读写应该分别拥有独立缓冲区
+	// 客户端或服务端连接，读写方向各自使用独立缓冲区
 	conn readWriteCloser
 }
 
@@ -189,7 +189,7 @@ func (w *Writer) connRead() {
 	w.Close()
 }
 
-// Write 写源数据到队列
+// Write 将媒体包封装为 RTMP 消息并同步写入连接
 func (w *Writer) Write(p *packet.Packet) error {
 	cs := &ChunkStream{
 		data:      p.Data,
